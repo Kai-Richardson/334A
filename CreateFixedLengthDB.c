@@ -38,7 +38,7 @@ int main(const int argc, const char * argv []) {
 	// Getting maximum line length from input file
 	int REC_LEN = 0;
 
-	// Maximum of 20 digits of length for our system() call (unknown #of digits).
+	// Maximum of 20 digits of length for our popen() call (unknown #of digits).
 	char length_call[27] = "wc -L <";
 	strcat(length_call, argv[1]);
 
