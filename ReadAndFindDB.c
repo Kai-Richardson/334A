@@ -70,9 +70,13 @@ int main(const int argc, const char * argv []) {
 	// Number of records we searched through for later display
 	int searched = 0;
 
+	// Number of pages we went through
+	int pages = 1;
+
 	// Return code from our search function
 	int return_code = CODE_NOTFOUND;
 	while (read(fd_in, read_buffer, PAGESIZE) > 0) {
+		pages++;
 		switch(mode) {
 			case 0: //sequential
 				return_code = MAX(return_code, SequentialSearch(read_buffer, search_text, &searched, REC_LEN, PAGESIZE));
@@ -94,7 +98,7 @@ int main(const int argc, const char * argv []) {
 	}
 	else {
 		printf("String %s found in given input.\n", search_text);
-		printf("%d records searched.\n", searched);
+		printf("%d records searched, found at position %d.\n", searched, return_code*pages);
 	}
 
 	return EXIT_SUCCESS;
