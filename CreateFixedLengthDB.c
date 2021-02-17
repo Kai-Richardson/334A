@@ -55,15 +55,19 @@ int main(const int argc, const char * argv []) {
 	}
 
 	// System page size for our buffer
-	int PAGESIZE = 30;
-	// Read(2) into this incrementally and work on contained data
-	char read_buffer[PAGESIZE];
+	const int PAGESIZE = getpagesize();
 
-	// Number of records we processed.
+	// Read(2) into this incrementally and work on contained data
+	char* read_buffer = calloc(PAGESIZE, sizeof(char));
+
+	// Number of records we processed for later display.
 	int rec_num = 0;
 
 	// A place to shove any overflow between pages to use it next iter.
 	char overflow_str[PAGESIZE];
+
+	// Is this our first inner scanf pass? Used for overflow prepending.
+	int first_pass = 0;
 
 	while (read(fd_in, read_buffer, PAGESIZE) > 0) {
 		// Buffer for our scanf().
@@ -80,28 +84,28 @@ int main(const int argc, const char * argv []) {
 		// Number of chars after our found str, to advance ptr.
 		int n;
 
-		// Is this our first scanf pass? Used for overflow prepending.
-		int first_pass = 0;
+		printf("ReadPass\n");
 
 		while (sscanf(buff_ptr, "%s%n", buff_in, &n) == 1) {
 
 			// How many bytes we've processed so far
 			int buffpos = -(start_buff_ptr - buff_ptr);
 
-			printf("entry:[%s][%d]\n", buff_in, buffpos);
+			printf("scanned:[%s][%d]\n", buff_in, buffpos);
 
 			// If we're going to overflow on this string
 			if (buffpos + REC_LEN > PAGESIZE) {
 				printf("Overflow: %s\n", buff_in);
 				strcpy(overflow_str, buff_in); //Copy to overflow and prepend on next iter
 				first_pass = 1;
+				buff_ptr += n;
 				break;
 			}
-			
+		
 
 			if (first_pass) {
 				printf("Prepending %s\n", overflow_str);
-				sprintf(record_out, "%s-%s%*u", overflow_str, buff_in, (REC_LEN -(int)strlen(buff_in)+2), ' ');
+				sprintf(record_out, "%s%s%*u", overflow_str, buff_in, (REC_LEN -(int)strlen(buff_in)+2), ' ');
 				first_pass = 0;
 			}
 			else {
@@ -120,9 +124,9 @@ int main(const int argc, const char * argv []) {
 			buff_ptr += n;
 		}
 
-		printf("--------PAGE--------\n");
+		free(read_buffer);
 
-		//TODO: check if there's stuff left in array and store it in an overflow if so
+		printf("--------PAGE--------\n");
 
 	}
 
