@@ -136,7 +136,9 @@ int SequentialSearch(char* input, const char* searchstr, int* searchnum, int rec
 	char buffer[reclen+1];
 	while (sscanf(input_ptr, "%s%n", buffer, &n_chars) == 1)
 	{
-		strcpy(search_arr[n_pos], buffer);
+		if (strncpy(search_arr[n_pos], buffer, reclen+1) == NULL) {
+			perror("fail: strncpy failed to copy\n");
+		}
 		n_pos++;
 		input_ptr += n_chars;
 	}
@@ -149,7 +151,7 @@ int SequentialSearch(char* input, const char* searchstr, int* searchnum, int rec
 		{
 			// We found it! Cleaning up and returning position.
 			cleanup(search_arr, num_records);
-			return i+1;
+			return i+1; //pos, not idx
 		}
 	}
 
