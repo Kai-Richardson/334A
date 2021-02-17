@@ -2,3 +2,5 @@
 int SequentialSearch();
 // uses a binary search function
 int InterpolationSearch();
+// array cleanup func
+void cleanup(char** arr, int arr_len);
