@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/CreateFixedLengthDB",
-            "args": [],
+            "args": ["american-english english.db"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

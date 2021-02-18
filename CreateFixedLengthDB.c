@@ -96,17 +96,18 @@ int main(const int argc, const char * argv []) {
 
 			// If we're going to overflow on this string
 			if (buffpos + REC_LEN > PAGESIZE) {
-				//printf("Overflow: %s(%d)\n", buff_in, buffpos + REC_LEN);
+				printf("Overflow: %s(%d)\n", buff_in, buffpos + REC_LEN);
 				strcpy(overflow_str, buff_in); //Copy to overflow and prepend on next iter
 				first_pass = 1;
 				break;
 			}
 
 			if (first_pass) {
-				//printf("Prepending %s to %s\n", overflow_str, buff_in);
-				sprintf(record_out, "%s\n%s%*u", overflow_str, buff_in, (REC_LEN -(int)strlen(buff_in)+2), ' ');
+				printf("Prepending %s to %s\n", overflow_str, buff_in);
+				sprintf(record_out, "%s%s%*u", overflow_str, buff_in, (REC_LEN -(int)strlen(buff_in)+2), ' ');
 				first_pass = 0;
-				buff_ptr += n;
+				printf("record_out: [%s]\n", record_out);
+				buff_ptr += n;	
 			}
 			else {
 				sprintf(record_out, "%s%*u", buff_in, (REC_LEN -(int)strlen(buff_in)+2), ' ');

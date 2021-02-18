@@ -96,11 +96,11 @@ int main(const int argc, const char * argv []) {
 		return EXIT_FAILURE;
 	}
 	else if (return_code == CODE_NOTFOUND) {
-		printf(URED "fail:" reset " String " URED "%s" HRED " not found " reset "in given input.\n", search_text);
+		printf(URED "fail:" reset " String " URED "%s" HRED " not found " reset "in given input. %d records read.\n", search_text, read_num);
 		return EXIT_FAILURE;
 	}
 	else {
-		printf(GRN "Success:" reset " String " UWHT "%s" reset " found in given input.\n", search_text);
+		printf(GRN "Success:" reset " String " UWHT "%s" reset " found in given input. \n", search_text);
 		printf("%d records read, found at position %d.\n", read_num, return_code*pages);
 	}
 
@@ -120,7 +120,7 @@ int SequentialSearch(char* input, const char* searchstr, int* searchnum, int rec
 	if (searchnum == NULL || searchstr == NULL) perror(URED "fail:" reset " bad search target\n");
 
 	// Number of records we need to store
-	int num_records = (PAGESIZE / (reclen+1))+4; //TODO: +4 due to overflow garbage data
+	int num_records = (PAGESIZE / (reclen+1))+2; //TODO: +4 due to overflow garbage data
 	// Number of records * Length of each record (+1 for \0)
 	int arr_size  = (num_records * (reclen+1));
 	
@@ -182,9 +182,9 @@ int InterpolationSearch(char* input, const char* searchstr, int* searchnum, int 
 	if (searchnum == NULL || searchstr == NULL) perror(URED "fail:" reset " bad search target\n");
 
 	// Number of records we need to store
-	int num_records = (PAGESIZE / (reclen+1))+4; //TODO: +4 due to overflow garbage data
+	int num_records = (PAGESIZE / (reclen+1)+2); //TODO: +4 due to overflow garbage data
 	// Number of records * Length of each record (+1 for \0)
-	int arr_size  = (num_records * (reclen+1));
+	int arr_size  = (num_records+1 * (reclen+1));
 	
 
 	// Setup array
@@ -209,6 +209,8 @@ int InterpolationSearch(char* input, const char* searchstr, int* searchnum, int 
 	char buffer[reclen+1];
 	while (sscanf(input_ptr, "%s%n", buffer, &n_chars) == 1)
 	{
+		if (n_pos >= num_records) break;
+		//printf("Copying %s to %d.\n", buffer, n_pos);
 		if (strncpy(search_arr[n_pos], buffer, reclen+1) == NULL) {
 			perror(URED "fail:" reset "strncpy failed to copy\n");
 		}
@@ -217,12 +219,14 @@ int InterpolationSearch(char* input, const char* searchstr, int* searchnum, int 
 	}
 	
 	int low = 0;
-	int high = num_records - 1;
+	int high = num_records-1;
 
 	// Repeat until the pointers low and high meet each other
 	while (low <= high) {
 		(*searchnum)++;
-		int mid = (high + low) / 2;
+		int mid = low + (high - low) / 2;
+
+		//printf("Testing %s\n", search_arr[mid]);
 
 		if (!strcmp(search_arr[mid], searchstr)) {
 			return mid+1; //pos, not idx
