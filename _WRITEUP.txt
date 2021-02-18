@@ -1,0 +1,41 @@
+1.	Did you complete all required sections and your product implements all required functionality of this assignment. 
+If not state what is successfully implemented and what is not.
+
+Yes, I completed all the required sections. I even implemented page-read overflow protection that should work for the majority of overflow cases.
+
+2.	Write a simple pseudo-code that explains the design of your ReadAndFindDB.c algorithms
+
+For sequential, it's pretty simple:
+ * Allocate a search array of our given input so we can parse it easier:
+    * While we can scan a string in our input:
+        * Copy that string into the array
+ * For every element in the array:
+    * If it matches, return the index and exit
+ * If nothing was found, return a NOTFOUND code.
+
+For binary, it's simple as well:
+ * Allocate a search array of our given input so we can parse it easier:
+    * While we can scan a string in our input:
+        * Copy that string into the array
+ * Given a first and last record:
+    * Compute a middle record. If our middle record is our string, return.
+    * Else:
+        * If our string compare is 'higher,' increase the low pointer.
+        * Else, it's lower, lower the high pointer.
+    * If nothing was found, return a NOTFOUND code.
+
+
+3.	Profile the your solution and fill out the following table. Use the time utility to record the execution times for:
+Search word	       | line num in file |	SequentialSearch (seconds) | InterpolationSearch (seconds)
+"password"         | 52542            | 0.043	                   |
+"administrator”    | 16660            |	0.019	                   |
+"chubaka"          | N/A              | 0.058	                   |
+"chrisanakala1234” | N/A              | 0.048	                   |
+"PassW0sD"         | N/A              | 0.056	                   |
+
+4.	Sequential search is obviously slower than the Interpolation search. 
+If you would keep the user level libraries in your code, how would you make the search faster for this inefficient implementation?
+
+5.	What differentiates fscanf from fread, strcmp from memcmp and what makes some commands faster than others?
+
+6.	Would you be able to rewrite the SequentialSearch using the user level libraries into the binary search algorithm? Please explain why?
