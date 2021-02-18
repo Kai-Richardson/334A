@@ -81,8 +81,10 @@ int main(const int argc, const char * argv []) {
 		switch(mode) {
 			case 0: //sequential
 				return_code = MAX(return_code, SequentialSearch(read_buffer, search_text, &read_num, REC_LEN, PAGESIZE));
+				break;
 			case 1: //interpolation
-				return_code = MAX(return_code, InterpolationSearch(read_buffer, search_text, &read_num));
+				return_code = MAX(return_code, InterpolationSearch(read_buffer, search_text, &read_num, REC_LEN, PAGESIZE));
+				break;
 		}
 		if (return_code != CODE_NOTFOUND) break;
 	}
@@ -120,10 +122,13 @@ int SequentialSearch(char* input, const char* searchstr, int* searchnum, int rec
 	
 
 	// Setup array
-	char** search_arr = malloc(arr_size * sizeof(char*));
-	for (int i = 0; i < num_records; i++)
+	char** search_arr = calloc(arr_size, sizeof(char*));
+	if (search_arr == NULL) perror(URED "fail:" reset "fail: malloc1 failed to allocate\n");
+
+	for (int i = 0; i < num_records; i++) // Allocating interior
 	{
-		search_arr[i] = malloc((reclen+1) * sizeof(char));
+		search_arr[i] = calloc(reclen + 1, sizeof(char));
+		if (search_arr[i] == NULL) perror(URED "fail:" reset "fail: malloc2 failed to allocate\n");
 	}
 
 	// Number of chars after our found str, to advance ptr.
@@ -138,7 +143,7 @@ int SequentialSearch(char* input, const char* searchstr, int* searchnum, int rec
 	while (sscanf(input_ptr, "%s%n", buffer, &n_chars) == 1)
 	{
 		if (strncpy(search_arr[n_pos], buffer, reclen+1) == NULL) {
-			perror("fail: strncpy failed to copy\n");
+			perror(URED "fail:" reset "strncpy failed to copy\n");
 		}
 		n_pos++;
 		input_ptr += n_chars;
@@ -160,9 +165,73 @@ int SequentialSearch(char* input, const char* searchstr, int* searchnum, int rec
 	return CODE_NOTFOUND;
 }
 
-int InterpolationSearch(char* input, const char* searchstr, int* searchnum) {
-	return EXIT_SUCCESS;
+/**
+ * Searches via binary search through a chunked char array input for a given string.
+ * 
+ * Return:	* negative int error code if failure encountered
+ * 			* CODE_NOTFOUND if not found
+ * 			* positive int of position if found
+ */
+int InterpolationSearch(char* input, const char* searchstr, int* searchnum, int reclen, int PAGESIZE) {
+	// Number of records we need to store
+	int num_records = (PAGESIZE / (reclen+1))+4; //TODO: +4 due to overflow garbage data
+	// Number of records * Length of each record (+1 for \0)
+	int arr_size  = (num_records * (reclen+1));
+	
+
+	// Setup array
+	char** search_arr = calloc(arr_size, sizeof(char*));
+	if (search_arr == NULL) perror(URED "fail:" reset "fail: malloc1 failed to allocate\n");
+	
+	for (int i = 0; i < num_records; i++) // Allocating interior
+	{
+		search_arr[i] = calloc(reclen+1, sizeof(char));
+		if (search_arr[i] == NULL) perror(URED "fail:" reset "fail: malloc2 failed to allocate\n");
+	}
+
+	// Number of chars after our found str, to advance ptr.
+	int n_chars = 0;
+	// Current processing position in array
+	int n_pos = 0;
+	// Ptr to the current position in the passed input slice
+	char* input_ptr = input;
+
+	// Scan through our input page and shove it into the array
+	char buffer[reclen+1];
+	while (sscanf(input_ptr, "%s%n", buffer, &n_chars) == 1)
+	{
+		if (strncpy(search_arr[n_pos], buffer, reclen+1) == NULL) {
+			perror(URED "fail:" reset "strncpy failed to copy\n");
+		}
+		n_pos++;
+		input_ptr += n_chars;
+	}
+	
+	int first = 0;
+	int last = num_records - 1;
+	int mid = (first+last)/2;
+
+	// Repeat until the pointers low and high meet each other
+	while (first <= last) {
+		(*searchnum)++;
+		int mid = first + (last - first) / 2;
+
+		if (!strcmp(search_arr[mid], searchstr)) {
+			return mid+1; //pos, not idx
+		}
+
+		if (strcmp(search_arr[mid], searchstr) > 0) {
+			first = mid + 1;
+		}
+		else {
+			last = mid - 1;
+		}
+	}
+
+	cleanup(search_arr, num_records);
+	return CODE_NOTFOUND;
 }
+
 
 void cleanup(char** arr, int num_records) {
 	for (int i = 0; i < num_records; i++)

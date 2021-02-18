@@ -9,7 +9,11 @@ make
 
 for iter in $(seq 1 $TESTS)
 do
-    echo "Running test $iter:"
+    printf "\nRunning test $iter:\n"
     $CREATE $TSTDIR/test$iter.txt $TSTDIR/out$iter.db
-    $READ $TSTDIR/out$iter.db aaa 0
+
+    for mode in $(seq 0 1)
+    do
+        $READ $TSTDIR/out$iter.db aaa $mode
+    done
 done
