@@ -216,23 +216,23 @@ int InterpolationSearch(char* input, const char* searchstr, int* searchnum, int 
 		input_ptr += n_chars;
 	}
 	
-	int first = 0;
-	int last = num_records - 1;
+	int low = 0;
+	int high = num_records - 1;
 
 	// Repeat until the pointers low and high meet each other
-	while (first <= last) {
+	while (low <= high) {
 		(*searchnum)++;
-		int mid = first + (last - first) / 2;
+		int mid = (high + low) / 2;
 
 		if (!strcmp(search_arr[mid], searchstr)) {
 			return mid+1; //pos, not idx
 		}
 
-		if (strcmp(search_arr[mid], searchstr) > 0) {
-			first = mid + 1;
+		if (strcmp(search_arr[mid], searchstr) < 0) {
+			high = mid - 1;
 		}
 		else {
-			last = mid - 1;
+			low = mid + 1;
 		}
 	}
 
