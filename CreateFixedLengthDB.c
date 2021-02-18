@@ -57,7 +57,7 @@ int main(const int argc, const char * argv []) {
 	}
 
 	// System page size for our buffer
-	const int PAGESIZE = 100;
+	const int PAGESIZE = getpagesize();
 
 	// Read(2) into this incrementally and work on contained data
 	char* read_buffer = calloc(PAGESIZE, sizeof(char));
@@ -66,7 +66,7 @@ int main(const int argc, const char * argv []) {
 	int rec_num = 0;
 
 	// A place to shove any overflow between pages to use it next iter.
-	char* overflow_str = calloc(PAGESIZE, sizeof(char));
+	char overflow_str[PAGESIZE];
 
 	// Is this our first inner scanf pass? Used for overflow prepending.
 	int first_pass = 0;
@@ -97,7 +97,7 @@ int main(const int argc, const char * argv []) {
 
 			// If we're going to overflow on this string
 			if (buffpos + 2 >= PAGESIZE) {
-				printf("Overflow: %s(%d)\n", buff_in, buffpos + REC_LEN);
+				//printf("Overflow: %s(%d)\n", buff_in, buffpos + REC_LEN);
 				strcpy(overflow_str, buff_in); //Copy to overflow and prepend on next iter
 				first_pass = 1;
 				//buff_ptr += n-1;
@@ -105,10 +105,10 @@ int main(const int argc, const char * argv []) {
 			}
 
 			if (first_pass) {
-				printf("Prepending %s to %s\n", overflow_str, buff_in);
+				//printf("Prepending %s to %s\n", overflow_str, buff_in);
 				sprintf(record_out, "%s%s%*u", overflow_str, buff_in, (REC_LEN -(int)strlen(buff_in)), ' ');
 				first_pass = 0;
-				printf("record_out: [%s]\n", record_out);
+				//printf("record_out: [%s]\n", record_out);
 				buff_ptr += n;	
 			}
 			else {
@@ -151,7 +151,6 @@ int main(const int argc, const char * argv []) {
 
 	// Free our last used read buffer block
 	free(read_buffer);
-	free(overflow_str);
 
 	close(fd_in);
 	close(fd_out);

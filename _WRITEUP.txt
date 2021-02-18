@@ -27,8 +27,8 @@ For binary, it's simple as well:
 
 3.	Profile the your solution and fill out the following table. Use the time utility to record the execution times for:
 Search word	       | line num in file |	SequentialSearch (seconds) | InterpolationSearch (seconds)
-"password"         | 52542            | 0.043	                   |
-"administrator”    | 16660            |	0.019	                   |
+"password"         | 47736            | 0.043	                   |
+"administrator”    | 3276             |	0.027	                   |
 "chubaka"          | N/A              | 0.058	                   |
 "chrisanakala1234” | N/A              | 0.048	                   |
 "PassW0sD"         | N/A              | 0.056	                   |
