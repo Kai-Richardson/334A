@@ -8,6 +8,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "stdkai.h"
 #include "reader.h"
 
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
@@ -17,7 +18,7 @@
 
 int main(const int argc, const char * argv []) {
 	if (argc != 4) {
-		printf("Usage: %s <Input File> <Search Text> <Mode>\n", argv[0]);
+		printf(RED "fail:" reset " " UWHT "Usage:" reset " %s <Input File> <Search Text> <Mode>\n", argv[0]);
 		exit(EXIT_FAILURE); 
 	}
 
@@ -28,7 +29,7 @@ int main(const int argc, const char * argv []) {
 	int fd_in = open(filename, O_RDONLY|O_CREAT, 0777);
  	int errnum = errno;	
  	if(errnum == -1){
-		printf("Could not open file: %s \n", argv[1]);
+		printf(URED "fail:" reset " Could not open file: %s \n", argv[1]);
 		exit(EXIT_FAILURE);
 	}
 
@@ -42,13 +43,13 @@ int main(const int argc, const char * argv []) {
 
 	FILE *fp_getlen = popen(&length_call[0], "r");
 	if (fscanf(fp_getlen, "%d", &REC_LEN) == EOF) {
-		printf("fail: Could not find record to determine length (improperly formatted file?)\n");
+		printf(URED "fail:" reset " Could not find record to determine length (improperly formatted file?)\n");
 		exit(EXIT_FAILURE);
 	}
 	pclose(fp_getlen);
 
 	if (REC_LEN == 0) {
-		printf("fail: Didn't find any records (improperly formatted file?)\n");
+		printf(URED "fail:" reset " Didn't find any records (improperly formatted file?)\n");
 		exit(EXIT_FAILURE);
 	}
 
@@ -57,10 +58,10 @@ int main(const int argc, const char * argv []) {
 	// Stat struct to get bytesize
 	struct stat struct_stat;	
 	if (stat(argv[1], &struct_stat) == -1) {
-		perror("Could not run sys call: stat\n");
+		perror(URED "fail:" reset " Could not run sys call: stat\n");
 	}
     rec_num = (int) (struct_stat.st_size / REC_LEN);
-	printf("Number of Records: %i\n", rec_num);
+	printf("Searching " BWHT "%i" reset " records with mode " YEL "%d" reset "...\n", rec_num, mode);
 
 	// System page size for our buffer
 	int PAGESIZE = getpagesize();
@@ -68,7 +69,7 @@ int main(const int argc, const char * argv []) {
 	char read_buffer[PAGESIZE];
 
 	// Number of records we searched through for later display
-	int searched = 0;
+	int read_num = 0;
 
 	// Number of pages we went through
 	int pages = 1;
@@ -79,9 +80,9 @@ int main(const int argc, const char * argv []) {
 		pages++;
 		switch(mode) {
 			case 0: //sequential
-				return_code = MAX(return_code, SequentialSearch(read_buffer, search_text, &searched, REC_LEN, PAGESIZE));
+				return_code = MAX(return_code, SequentialSearch(read_buffer, search_text, &read_num, REC_LEN, PAGESIZE));
 			case 1: //interpolation
-				return_code = MAX(return_code, InterpolationSearch(read_buffer, search_text, &searched));
+				return_code = MAX(return_code, InterpolationSearch(read_buffer, search_text, &read_num));
 		}
 		if (return_code != CODE_NOTFOUND) break;
 	}
@@ -89,16 +90,16 @@ int main(const int argc, const char * argv []) {
 	close(fd_in);
 
 	if (return_code < CODE_NOTFOUND){
-		printf("fail: Error %d encountered while searching.\n", return_code);
+		printf(URED "fail:" reset " Error %d encountered while searching.\n", return_code);
 		return EXIT_FAILURE;
 	}
 	else if (return_code == CODE_NOTFOUND) {
-		printf("fail: String %s not found in given input.\n", search_text);
+		printf(URED "fail:" reset " String " URED "%s" HRED " not found " reset "in given input.\n", search_text);
 		return EXIT_FAILURE;
 	}
 	else {
-		printf("String %s found in given input.\n", search_text);
-		printf("%d records searched, found at position %d.\n", searched, return_code*pages);
+		printf(GRN "Success:" reset " String " UWHT "%s" reset " found in given input.\n", search_text);
+		printf("%d records read, found at position %d.\n", read_num, return_code*pages);
 	}
 
 	return EXIT_SUCCESS;

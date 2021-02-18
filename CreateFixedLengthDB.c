@@ -10,10 +10,12 @@
 #include <fcntl.h>
 #include <unistd.h>
 
+#include "stdkai.h"
+
 int main(const int argc, const char * argv []) {
 	// Tests for our arguments
 	if (argc != 3) {
-		printf("fail: Usage: %s <Input File> <Output File>\n", argv[0]);
+		printf(RED "fail:" reset " " UWHT "Usage:" reset " %s <Input File> <Output File>\n", argv[0]);
 		exit(EXIT_FAILURE); 
 	}
 
@@ -22,7 +24,7 @@ int main(const int argc, const char * argv []) {
 	int fd_in = open(fn_in, O_RDONLY|O_CREAT, 0777);
 	int errnum_in = errno;
 	if(errnum_in == -1){
-		printf("fail: Could not open ifile: %s \n", argv[1]);
+		printf(URED "fail:" reset " Could not open ifile: %s \n", argv[1]);
 		exit(EXIT_FAILURE);
 	}
 
@@ -31,7 +33,7 @@ int main(const int argc, const char * argv []) {
 	int fd_out = open(fn_out, O_WRONLY|O_CREAT|O_TRUNC, 0777);
 	int errnum_out = errno;
 	if(errnum_out == -1){
-		printf("fail: Could not open ofile: %s \n", argv[2]);
+		printf(URED "fail:" reset " Could not open ofile: %s \n", argv[2]);
 		exit(EXIT_FAILURE);
 	}
 
@@ -44,13 +46,13 @@ int main(const int argc, const char * argv []) {
 
 	FILE *fp_getlen = popen(&length_call[0], "r");
 	if (fscanf(fp_getlen, "%d", &REC_LEN) == EOF) {
-		printf("fail: Could not find record to determine length of (improperly formatted file?)\n");
+		printf(URED "fail:" reset " Could not find record to determine length of (improperly formatted file?)\n");
 		exit(EXIT_FAILURE);
 	}
 	pclose(fp_getlen);
 
 	if (REC_LEN == 0) {
-		printf("fail: Calculated a maximum record length of 0 (improperly formatted file?)\n");
+		printf(URED "fail:" reset " Calculated a maximum record length of 0 (improperly formatted file?)\n");
 		exit(EXIT_FAILURE);
 	}
 
@@ -114,7 +116,7 @@ int main(const int argc, const char * argv []) {
 			
 			record_out[REC_LEN] = '\n';
 			if (write(fd_out, record_out, sizeof(record_out)/sizeof(record_out[0])) == -1) {
-				printf("fail: Error writing database record %s to file %s", record_out, argv[2]);
+				printf(URED "fail:" reset " Error writing database record %s to file %s", record_out, argv[2]);
 				exit(EXIT_FAILURE);
 			}
 			// inc. num processed
@@ -132,11 +134,11 @@ int main(const int argc, const char * argv []) {
 	if (first_pass) //We still have leftover overflow
 	{
 		char record_out[REC_LEN+1];
-		printf("writing %s\n", overflow_str);
+		//printf("writing %s\n", overflow_str);
 		sprintf(record_out, "%s%*u", overflow_str, (REC_LEN -(int)strlen(overflow_str)+2), ' ');
 		record_out[REC_LEN] = '\n';
 		if (write(fd_out, record_out, sizeof(record_out)/sizeof(record_out[0])) == -1) {
-			printf("fail: Error writing database record %s to file %s", record_out, argv[2]);
+			printf(URED "fail:" reset " Error writing database record %s to file %s", record_out, argv[2]);
 			exit(EXIT_FAILURE);
 		}
 
@@ -150,7 +152,7 @@ int main(const int argc, const char * argv []) {
 	close(fd_in);
 	close(fd_out);
 
-	printf("Successful: %d records\n", rec_num);
+	printf(GRN "Creation Successful: " BWHT "%d" reset " records\n", rec_num);
 
 	return 1;
 }	
