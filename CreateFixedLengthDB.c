@@ -106,7 +106,7 @@ int main(const int argc, const char * argv []) {
 
 			if (first_pass) {
 				//printf("Prepending %s to %s\n", overflow_str, buff_in);
-				sprintf(record_out, "%s%s%*u", overflow_str, buff_in, (REC_LEN -(int)strlen(buff_in)), ' ');
+				sprintf(record_out, "%s%s%*c", overflow_str, buff_in, (REC_LEN -(int)strlen(buff_in)-(int)strlen(overflow_str)), ' ');
 				first_pass = 0;
 				//printf("record_out: [%s]\n", record_out);
 				buff_ptr += n;	
