@@ -57,7 +57,7 @@ int main(const int argc, const char * argv []) {
 	}
 
 	// System page size for our buffer
-	const int PAGESIZE = getpagesize();
+	const int PAGESIZE = 100;
 
 	// Read(2) into this incrementally and work on contained data
 	char* read_buffer = calloc(PAGESIZE, sizeof(char));
@@ -87,7 +87,8 @@ int main(const int argc, const char * argv []) {
 
 		//printf("ReadPass\n");
 
-		while (sscanf(buff_ptr, "%s%n", buff_in, &n) == 1) {
+		//string, whitespace, newline
+		while (sscanf(buff_ptr, "%s%*c%n", buff_in, &n) == 1) {
 
 			// How many bytes we've processed so far
 			int buffpos = -(read_buffer - buff_ptr);
@@ -104,7 +105,7 @@ int main(const int argc, const char * argv []) {
 
 			if (first_pass) {
 				printf("Prepending %s to %s\n", overflow_str, buff_in);
-				sprintf(record_out, "%s%s%*u", overflow_str, buff_in, (REC_LEN -(int)strlen(buff_in)+2), ' ');
+				sprintf(record_out, "%s%s%*u", overflow_str, buff_in, (REC_LEN -(int)strlen(buff_in)), ' ');
 				first_pass = 0;
 				printf("record_out: [%s]\n", record_out);
 				buff_ptr += n;	

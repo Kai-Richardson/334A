@@ -1,5 +1,5 @@
 
-CFLAGS= -g -O2 -Wall
+CFLAGS= -g -Wall
 programs = CreateFixedLengthDB ReadAndFindDB
 
 all: $(programs)
