@@ -27,11 +27,11 @@ For binary, it's simple as well:
 
 3.	Profile the your solution and fill out the following table. Use the time utility to record the execution times for:
 Search word	       | line num in file |	SequentialSearch (seconds) | InterpolationSearch (seconds)
-"password"         | 47736            | 0.043	                   |
-"administrator”    | 3276             |	0.027	                   |
-"chubaka"          | N/A              | 0.058	                   |
-"chrisanakala1234” | N/A              | 0.048	                   |
-"PassW0sD"         | N/A              | 0.056	                   |
+"password"         | 71208            | 0.045	                   | 0.042s
+"administrator”    | 20182            |	0.024	                   | 0.016s
+"chubaka"          | N/A              | 0.058	                   | 0.048s
+"chrisanakala1234” | N/A              | 0.058	                   | 0.048s
+"PassW0sD"         | N/A              | 0.057	                   | 0.048s
 
 4.	Sequential search is obviously slower than the Interpolation search. 
 If you would keep the user level libraries in your code, how would you make the search faster for this inefficient implementation?
