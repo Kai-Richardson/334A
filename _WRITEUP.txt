@@ -35,7 +35,13 @@ Search word	       | line num in file |	SequentialSearch (seconds) | Interpolati
 
 4.	Sequential search is obviously slower than the Interpolation search. 
 If you would keep the user level libraries in your code, how would you make the search faster for this inefficient implementation?
+Since we know our list is sorted, we could early return once we're past where our input would be in the dict.
 
 5.	What differentiates fscanf from fread, strcmp from memcmp and what makes some commands faster than others?
+fread simply reads raw bytes, fscanf only accepts input in the given format
+strcmp makes sure you're comparing strings, memcmp is just memory
+Essentially, you're trading off safety for speed, which is not something you should have to do.
 
 6.	Would you be able to rewrite the SequentialSearch using the user level libraries into the binary search algorithm? Please explain why?
+I mean yes, you could just use fscanf to compare strings I guess.
+You could also just use an actual binary search library for likely better performance.
