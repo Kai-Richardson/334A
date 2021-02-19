@@ -20,8 +20,8 @@ For binary, it's simple as well:
  * Given a first and last record:
     * Compute a middle record. If our middle record is our string, return.
     * Else:
-        * If our string compare is 'higher,' increase the low pointer.
-        * Else, it's lower, lower the high pointer.
+        * If our string compare is 'higher,' lower the high pointer.
+        * Else, it's lower, increase the low pointer.
     * If nothing was found, return a NOTFOUND code.
 
 

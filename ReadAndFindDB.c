@@ -72,7 +72,7 @@ int main(const int argc, const char * argv []) {
 	int read_num = 0;
 
 	// Number of pages we went through
-	int pages = 1;
+	int pages = 0;
 
 	// Return code from our search function
 	int return_code = CODE_NOTFOUND;
@@ -119,17 +119,17 @@ int SequentialSearch(char* input, const char* searchstr, int* searchnum, int rec
 	if (input == NULL) perror(URED "fail:" reset " bad input\n");
 	if (searchnum == NULL || searchstr == NULL) perror(URED "fail:" reset " bad search target\n");
 
-	// Number of records we need to store
-	int num_records = (PAGESIZE / (reclen+1))+4; //TODO: +4 due to overflow garbage data
+	// Number of records we need to store/calloc
+	int max_num_records = (PAGESIZE / (reclen+1))+4; //TODO: +4 due to overflow garbage data
 	// Number of records * Length of each record (+1 for \0)
-	int arr_size  = (num_records * (reclen+1));
+	int arr_size  = (max_num_records * (reclen+1));
 	
 
 	// Setup array
 	char** search_arr = calloc(arr_size, sizeof(char*));
 	if (search_arr == NULL) perror(URED "fail:" reset " malloc1 failed to allocate\n");
 
-	for (int i = 0; i < num_records; i++) // Allocating interior
+	for (int i = 0; i < max_num_records; i++) // Allocating interior
 	{
 		search_arr[i] = calloc(reclen + 1, sizeof(char));
 		if (search_arr[i] == NULL) perror(URED "fail:" reset " malloc2 failed to allocate\n");
@@ -137,7 +137,7 @@ int SequentialSearch(char* input, const char* searchstr, int* searchnum, int rec
 
 	// Number of chars after our found str, to advance ptr.
 	int n_chars = 0;
-	// Current processing position in array
+	// Current processing position in array, also number of actual records we're processing
 	int n_pos = 0;
 	// Ptr to the current position in the passed input slice
 	char* input_ptr = input;
@@ -146,7 +146,7 @@ int SequentialSearch(char* input, const char* searchstr, int* searchnum, int rec
 	char buffer[reclen+1];
 	while (sscanf(input_ptr, "%s%n", buffer, &n_chars) == 1)
 	{
-		if (n_pos >= num_records) break;
+		if (n_pos >= max_num_records) break;
 		//printf("Copying %s to %d.\n", buffer, n_pos);
 		if (strncpy(search_arr[n_pos], buffer, reclen+1) == NULL) {
 			perror(URED "fail:" reset "strncpy failed to copy\n");
@@ -156,18 +156,18 @@ int SequentialSearch(char* input, const char* searchstr, int* searchnum, int rec
 	}
 	
 	// The actual searching part
-	for(int i = 0; i < num_records; ++i)
+	for(int i = 0; i < n_pos; ++i)
 	{
 		(*searchnum)++;
 		if(!strcmp(search_arr[i], searchstr))
 		{
 			// We found it! Cleaning up and returning position.
-			cleanup(search_arr, num_records);
+			cleanup(search_arr, max_num_records);
 			return i+1; //pos, not idx
 		}
 	}
 
-	cleanup(search_arr, num_records);
+	cleanup(search_arr, max_num_records);
 	return CODE_NOTFOUND;
 }
 
@@ -183,25 +183,25 @@ int InterpolationSearch(char* input, const char* searchstr, int* searchnum, int 
 	if (input == NULL) perror(URED "fail:" reset " bad input\n");
 	if (searchnum == NULL || searchstr == NULL) perror(URED "fail:" reset " bad search target\n");
 
-	// Number of records we need to store
-	int num_records = (PAGESIZE / (reclen+1)+2); //TODO: +4 due to overflow garbage data
+	// Number of records we need to store/check
+	int max_num_records = (PAGESIZE / (reclen+1)+2); //TODO: +2 due to overflow garbage data
 	// Number of records * Length of each record (+1 for \0)
-	int arr_size  = (num_records * (reclen+1));
+	int arr_size  = (max_num_records * (reclen+1));
 	
 
 	// Setup array
 	char** search_arr = calloc(arr_size, sizeof(char*));
 	if (search_arr == NULL) perror(URED "fail:" reset " malloc1 failed to allocate\n");
 	
-	for (int i = 0; i < num_records; i++) // Allocating interior
+	for (int i = 0; i < max_num_records; i++) // Allocating interior
 	{
-		search_arr[i] = calloc(reclen+1, sizeof(char));
+		search_arr[i] = calloc(reclen + 1, sizeof(char));
 		if (search_arr[i] == NULL) perror(URED "fail:" reset " malloc2 failed to allocate\n");
 	}
 
 	// Number of chars after our found str, to advance ptr.
 	int n_chars = 0;
-	// Current processing position in array
+	// Current processing position in array, also number of actual records we're processing
 	int n_pos = 0;
 	// Ptr to the current position in the passed input slice
 	char* input_ptr = input;
@@ -211,7 +211,7 @@ int InterpolationSearch(char* input, const char* searchstr, int* searchnum, int 
 	char buffer[reclen+1];
 	while (sscanf(input_ptr, "%s%n", buffer, &n_chars) == 1)
 	{
-		if (n_pos >= num_records) break;
+		if (n_pos >= max_num_records) break; // Break if we're about to go off the arr
 		//printf("Copying %s to %d.\n", buffer, n_pos);
 		if (strncpy(search_arr[n_pos], buffer, reclen+1) == NULL) {
 			perror(URED "fail:" reset "strncpy failed to copy\n");
@@ -221,7 +221,7 @@ int InterpolationSearch(char* input, const char* searchstr, int* searchnum, int 
 	}
 	
 	int low = 0;
-	int high = num_records-1;
+	int high = n_pos-1;
 
 	// Repeat until the pointers low and high meet each other
 	while (low <= high) {
@@ -230,11 +230,12 @@ int InterpolationSearch(char* input, const char* searchstr, int* searchnum, int 
 
 		//printf("Testing %s\n", search_arr[mid]);
 
-		if (!strcmp(search_arr[mid], searchstr)) {
+		int compare = strcmp(search_arr[mid], searchstr);
+
+		if (!compare) {
 			return mid+1; //pos, not idx
 		}
-
-		if (strcmp(search_arr[mid], searchstr) < 0) {
+		else if (compare > 0) {
 			high = mid - 1;
 		}
 		else {
@@ -242,7 +243,7 @@ int InterpolationSearch(char* input, const char* searchstr, int* searchnum, int 
 		}
 	}
 
-	cleanup(search_arr, num_records);
+	cleanup(search_arr, max_num_records);
 	return CODE_NOTFOUND;
 }
 

@@ -97,7 +97,7 @@ int main(const int argc, const char * argv []) {
 
 			// If we're going to overflow on this string
 			if (buffpos + (sizeof(buff_ptr)) > PAGESIZE) {
-				printf("Overflow: %s(%d)\n", buff_in, buffpos + REC_LEN);
+				//printf("Overflow: %s(%d)\n", buff_in, buffpos + REC_LEN);
 				strcpy(overflow_str, buff_in); //Copy to overflow and prepend on next iter
 				first_pass = 1;
 				//buff_ptr += n-1;
@@ -105,17 +105,18 @@ int main(const int argc, const char * argv []) {
 			}
 
 			if (first_pass) {
-				printf("Prepending %s to %s\n", overflow_str, buff_in);
+				//printf("Prepending %s to %s\n", overflow_str, buff_in);
 				if (buff_ptr[buffpos] == '\n') {
-					printf("Newline detected.\n");
+					//printf("Newline detected.\n");
 					sprintf(record_out, "%s\n%s%*c", overflow_str, buff_in, (REC_LEN -(int)strlen(buff_in)-(int)strlen(overflow_str))-1, ' ');
 				}
 				else {
 					sprintf(record_out, "%s%s%*c", overflow_str, buff_in, (REC_LEN -(int)strlen(buff_in)-(int)strlen(overflow_str)), ' ');
+					
 				}
 				first_pass = 0;
-				printf("record_out: [%s]\n", record_out);
-				buff_ptr += n;	
+				//printf("record_out: [%s]\n", record_out);
+				buff_ptr += n;
 			}
 			else {
 				sprintf(record_out, "%s%*u", buff_in, (REC_LEN -(int)strlen(buff_in)+2), ' ');

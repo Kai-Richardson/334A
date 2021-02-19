@@ -14,6 +14,6 @@ do
 
     for mode in $(seq 0 1)
     do
-        $READ $TSTDIR/out$iter.db aaa $mode
+        $READ $TSTDIR/out$iter.db f $mode
     done
 done
