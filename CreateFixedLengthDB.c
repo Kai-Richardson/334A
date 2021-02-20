@@ -69,7 +69,7 @@ int main(const int argc, const char * argv []) {
 	char overflow_str[PAGESIZE];
 
 	// Is this our first inner scanf pass? Used for overflow prepending.
-	int first_pass = 0;
+	int first_after_over = 0;
 
 	while (read(fd_in, read_buffer, PAGESIZE) > 0) {
 
@@ -84,8 +84,6 @@ int main(const int argc, const char * argv []) {
 
 		// Number of chars after our found str, to advance ptr.
 		int n;
-
-		//printf("ReadPass\n");
 		
 		//string, whitespace, newline
 		while (sscanf(buff_ptr, "%s%*c%n", buff_in, &n) == 1) {
@@ -93,18 +91,19 @@ int main(const int argc, const char * argv []) {
 			// How many bytes we've processed so far
 			int buffpos = -(read_buffer - buff_ptr);
 
+			char likely_newline = buff_ptr[n-1];
+
 			//printf("scanned:[%s][%d]\n", buff_in, buffpos);
 
 			// If we're going to overflow on this string
 			if (buffpos + (sizeof(buff_ptr)) > PAGESIZE) {
 				//printf("Overflow: %s(%d)\n", buff_in, buffpos + REC_LEN);
 				strcpy(overflow_str, buff_in); //Copy to overflow and prepend on next iter
-				first_pass = 1;
-				//buff_ptr += n-1;
+				first_after_over = 1;
 				break;
 			}
 
-			if (first_pass) {
+			if (first_after_over) {
 				//printf("Prepending %s to %s\n", overflow_str, buff_in);
 				if (buff_ptr[buffpos] == '\n') {
 					//printf("Newline detected.\n");
@@ -114,17 +113,20 @@ int main(const int argc, const char * argv []) {
 					sprintf(record_out, "%s%s%*c", overflow_str, buff_in, (REC_LEN -(int)strlen(buff_in)-(int)strlen(overflow_str)), ' ');
 					
 				}
-				first_pass = 0;
+				first_after_over = 0;
 				//printf("record_out: [%s]\n", record_out);
 				buff_ptr += n;
 			}
 			else {
-				sprintf(record_out, "%s%*u", buff_in, (REC_LEN -(int)strlen(buff_in)+2), ' ');
+				sprintf(record_out, "%s%*c", buff_in, (REC_LEN -(int)strlen(buff_in)), ' ');
 				// adv. ptr
 				buff_ptr += n;				
 			}
 			
-			record_out[REC_LEN] = '\n';
+			// TODO: Extra line error caused on page overflow
+			if (likely_newline == '\n') {
+				record_out[REC_LEN] = '\n';
+			}
 			if (write(fd_out, record_out, sizeof(record_out)/sizeof(record_out[0])) == -1) {
 				printf(URED "fail:" reset " Error writing database record %s to file %s", record_out, argv[2]);
 				exit(EXIT_FAILURE);
@@ -141,7 +143,7 @@ int main(const int argc, const char * argv []) {
 
 	}
 
-	if (first_pass) //We still have leftover overflow
+	if (first_after_over) //We still have leftover overflow
 	{
 		char record_out[REC_LEN+1];
 		//printf("writing %s\n", overflow_str);
