@@ -247,7 +247,7 @@ int InterpolationSearch(char* input, const char* searchstr, int* searchnum, int 
 	return CODE_NOTFOUND;
 }
 
-
+/// array cleanup func
 void cleanup(char** arr, int num_records) {
 	for (int i = 0; i < num_records; i++)
 	{
