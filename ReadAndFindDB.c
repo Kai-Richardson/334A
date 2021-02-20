@@ -64,7 +64,7 @@ int main(const int argc, const char * argv []) {
 		perror(URED "fail:" reset " Could not run sys call: stat\n");
 	}
     rec_num = (int) (struct_stat.st_size / REC_LEN);
-	printf("Searching " BWHT "%i" reset " records with mode " YEL "%d" reset "...\n", rec_num, mode);
+	printf("Searching " BWHT "%i" reset " records with mode " YEL "%d" reset " in file " BWHT "%s" reset  "...\n", rec_num, mode, argv[1]);
 
 	/// System page size for our buffer
 	int PAGESIZE = getpagesize();
