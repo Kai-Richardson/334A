@@ -96,7 +96,7 @@ int main(const int argc, const char * argv []) {
 			//printf("scanned:[%s][%d]\n", buff_in, buffpos);
 
 			// If we're going to overflow on this string
-			if (buffpos + (sizeof(buff_ptr)) > PAGESIZE) {
+			if (buffpos + (sizeof(buff_ptr)) >= PAGESIZE) {
 				//printf("Overflow: %s(%d)\n", buff_in, buffpos + REC_LEN);
 				strcpy(overflow_str, buff_in); //Copy to overflow and prepend on next iter
 				first_after_over = 1;
@@ -110,7 +110,7 @@ int main(const int argc, const char * argv []) {
 					sprintf(record_out, "%s\n%s%*c", overflow_str, buff_in, (REC_LEN -(int)strlen(buff_in)-(int)strlen(overflow_str))-1, ' ');
 				}
 				else {
-					sprintf(record_out, "%s%s%*c", overflow_str, buff_in, (REC_LEN -(int)strlen(buff_in)-(int)strlen(overflow_str)), ' ');
+					sprintf(record_out, "%s%s%*c\n", overflow_str, buff_in, (REC_LEN -(int)strlen(buff_in)-(int)strlen(overflow_str)), ' ');
 					
 				}
 				first_after_over = 0;
@@ -118,15 +118,22 @@ int main(const int argc, const char * argv []) {
 				buff_ptr += n;
 			}
 			else {
-				sprintf(record_out, "%s%*c", buff_in, (REC_LEN -(int)strlen(buff_in)), ' ');
+				//If we're not at the end of a line, don't pad with spaces
+				if (likely_newline != '\n') {
+					strcpy(overflow_str, buff_in); //Copy to overflow and prepend on next iter
+					first_after_over = 1;
+					break;
+					//sprintf(record_out, "%s", buff_in);
+				}
+				else {
+					sprintf(record_out, "%s%*c", buff_in, (REC_LEN -(int)strlen(buff_in)), ' ');
+					record_out[REC_LEN] = '\n';
+				}
+				
 				// adv. ptr
 				buff_ptr += n;				
 			}
-			
-			// TODO: Extra line error caused on page overflow
-			if (likely_newline == '\n') {
-				record_out[REC_LEN] = '\n';
-			}
+
 			if (write(fd_out, record_out, sizeof(record_out)/sizeof(record_out[0])) == -1) {
 				printf(URED "fail:" reset " Error writing database record %s to file %s", record_out, argv[2]);
 				exit(EXIT_FAILURE);
