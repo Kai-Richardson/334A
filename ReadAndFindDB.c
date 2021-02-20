@@ -12,19 +12,23 @@
 #include "reader.h"
 
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
-#define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
 #define CODE_NOTFOUND 0
+#define MAXIMUM_INPUT_LENGTH 20
 
+// Handles the main reading logic
 int main(const int argc, const char * argv []) {
 	if (argc != 4) {
 		printf(RED "fail:" reset " " UWHT "Usage:" reset " %s <Input File> <Search Text> <Mode>\n", argv[0]);
 		exit(EXIT_FAILURE);
 	}
 
+	/// The text we are to search for
 	const char* search_text = argv[2];
+	/// Our passed search mode
 	const int mode = atoi(argv[3]);
 
+	/// Our file we are buffering and then searching
 	const char * filename = argv[1];
 	int fd_in = open(filename, O_RDONLY|O_CREAT, 0777);
  	int errnum = errno;
@@ -33,12 +37,10 @@ int main(const int argc, const char * argv []) {
 		exit(EXIT_FAILURE);
 	}
 
-
-	// Getting maximum line length from input file
+	/// Maximum line length determined from input file
 	int REC_LEN = 0;
 
-	// Maximum of 20 digits of length for our popen() call (unknown #of digits).
-	char length_call[27] = "wc -L <";
+	char length_call[MAXIMUM_INPUT_LENGTH+7] = "wc -L <";
 	strcat(length_call, argv[1]);
 
 	FILE *fp_getlen = popen(&length_call[0], "r");
@@ -53,9 +55,10 @@ int main(const int argc, const char * argv []) {
 		exit(EXIT_FAILURE);
 	}
 
-	// Number of records found
+	/// Number of records found
 	int rec_num = 0;
-	// Stat struct to get bytesize
+
+	/// Stat struct to get bytesize
 	struct stat struct_stat;
 	if (stat(argv[1], &struct_stat) == -1) {
 		perror(URED "fail:" reset " Could not run sys call: stat\n");
@@ -63,19 +66,21 @@ int main(const int argc, const char * argv []) {
     rec_num = (int) (struct_stat.st_size / REC_LEN);
 	printf("Searching " BWHT "%i" reset " records with mode " YEL "%d" reset "...\n", rec_num, mode);
 
-	// System page size for our buffer
+	/// System page size for our buffer
 	int PAGESIZE = getpagesize();
-	// Read(2) into this incrementally and work on contained data
+	/// Read(2) into this incrementally and work on contained data
 	char read_buffer[PAGESIZE];
 
-	// Number of records we searched through for later display
+	/// Number of records we searched through for later display
 	int read_num = 0;
 
-	// Number of pages we went through
+	/// Number of pages we went through
 	int pages = 0;
 
-	// Return code from our search function
+	/// Return code from our search function (no default return values in C 😢)
 	int return_code = CODE_NOTFOUND;
+
+	// Our main loop to go through different pages and search
 	while (read(fd_in, read_buffer, PAGESIZE) > 0) {
 		pages++;
 		switch(mode) {
@@ -86,7 +91,7 @@ int main(const int argc, const char * argv []) {
 				return_code = MAX(return_code, InterpolationSearch(read_buffer, search_text, &read_num, REC_LEN, PAGESIZE));
 				break;
 		}
-		if (return_code != CODE_NOTFOUND) break;
+		if (return_code != CODE_NOTFOUND) break; //We encountered an error or found something
 	}
 
 	close(fd_in);
@@ -107,12 +112,20 @@ int main(const int argc, const char * argv []) {
 	return EXIT_SUCCESS;
 }
 
+/*
+ * In Advance note:
+ * Sorry that I didn't split up the array allocation and setup from each search.
+ * There's massive duplication due to this.
+ * I tried, but it ended up wasting a lot of my time trying to debug errors that arose.
+ */
+
+
 /**
  * Searches sequentially through a chunked char array input for a given string.
  *
  * Return:	* negative int error code if failure encountered
- * 			* CODE_NOTFOUND if not found
- * 			* positive int of position if found
+ * 					* CODE_NOTFOUND if not found
+ * 					* positive int of position if found
  */
 int SequentialSearch(char* input, const char* searchstr, int* searchnum, int reclen, int PAGESIZE) {
 
@@ -120,7 +133,7 @@ int SequentialSearch(char* input, const char* searchstr, int* searchnum, int rec
 	if (searchnum == NULL || searchstr == NULL) perror(URED "fail:" reset " bad search target\n");
 
 	// Number of records we need to store/calloc
-	int max_num_records = (PAGESIZE / (reclen+1))+4; //TODO: +4 due to overflow garbage data
+	int max_num_records = (PAGESIZE / (reclen+1)); //+1 for safety
 	// Number of records * Length of each record (+1 for \0)
 	int arr_size  = (max_num_records * (reclen+1));
 
@@ -135,19 +148,18 @@ int SequentialSearch(char* input, const char* searchstr, int* searchnum, int rec
 		if (search_arr[i] == NULL) perror(URED "fail:" reset " malloc2 failed to allocate\n");
 	}
 
-	// Number of chars after our found str, to advance ptr.
+	/// Number of chars in found str, to advance ptr.
 	int n_chars = 0;
-	// Current processing position in array, also number of actual records we're processing
+	/// Current processing position in array, also number of actual records we're processing
 	int n_pos = 0;
-	// Ptr to the current position in the passed input slice
+	/// Ptr to the current position in the passed input slice
 	char* input_ptr = input;
 
 	// Scan through our input page and shove it into the array
 	char buffer[reclen+1];
 	while (sscanf(input_ptr, "%s%n", buffer, &n_chars) == 1)
 	{
-		if (n_pos >= max_num_records) break;
-		//printf("Copying %s to %d.\n", buffer, n_pos);
+		if (n_pos >= max_num_records) break; // Break if we're about to go off the arr
 		if (strncpy(search_arr[n_pos], buffer, reclen+1) == NULL) {
 			perror(URED "fail:" reset "strncpy failed to copy\n");
 		}
@@ -175,8 +187,8 @@ int SequentialSearch(char* input, const char* searchstr, int* searchnum, int rec
  * Searches via binary search through a chunked char array input for a given string.
  *
  * Return:	* negative int error code if failure encountered
- * 			* CODE_NOTFOUND if not found
- * 			* positive int of position if found
+ * 					* CODE_NOTFOUND if not found
+ * 					* positive int of position if found
  */
 int InterpolationSearch(char* input, const char* searchstr, int* searchnum, int reclen, int PAGESIZE) {
 
@@ -184,7 +196,7 @@ int InterpolationSearch(char* input, const char* searchstr, int* searchnum, int 
 	if (searchnum == NULL || searchstr == NULL) perror(URED "fail:" reset " bad search target\n");
 
 	// Number of records we need to store/check
-	int max_num_records = (PAGESIZE / (reclen+1)+2); //TODO: +2 due to overflow garbage data
+	int max_num_records = (PAGESIZE / (reclen+1)+1); //+1 for safety
 	// Number of records * Length of each record (+1 for \0)
 	int arr_size  = (max_num_records * (reclen+1));
 
@@ -199,11 +211,11 @@ int InterpolationSearch(char* input, const char* searchstr, int* searchnum, int 
 		if (search_arr[i] == NULL) perror(URED "fail:" reset " malloc2 failed to allocate\n");
 	}
 
-	// Number of chars after our found str, to advance ptr.
+	/// Number of chars in found str, to advance ptr.
 	int n_chars = 0;
-	// Current processing position in array, also number of actual records we're processing
+	/// Current processing position in array, also number of actual records we're processing
 	int n_pos = 0;
-	// Ptr to the current position in the passed input slice
+	/// Ptr to the current position in the passed input slice
 	char* input_ptr = input;
 	if (input_ptr == NULL) perror(URED "fail:" reset " bad input\n");
 
@@ -212,7 +224,6 @@ int InterpolationSearch(char* input, const char* searchstr, int* searchnum, int 
 	while (sscanf(input_ptr, "%s%n", buffer, &n_chars) == 1)
 	{
 		if (n_pos >= max_num_records) break; // Break if we're about to go off the arr
-		//printf("Copying %s to %d.\n", buffer, n_pos);
 		if (strncpy(search_arr[n_pos], buffer, reclen+1) == NULL) {
 			perror(URED "fail:" reset "strncpy failed to copy\n");
 		}
@@ -228,11 +239,9 @@ int InterpolationSearch(char* input, const char* searchstr, int* searchnum, int 
 		(*searchnum)++;
 		int mid = low + (high - low) / 2;
 
-		//printf("Testing %s\n", search_arr[mid]);
-
 		int compare = strcmp(search_arr[mid], searchstr);
 
-		if (!compare) {
+		if (!compare) { //Found it!
 			return mid+1; //pos, not idx
 		}
 		else if (compare > 0) {
