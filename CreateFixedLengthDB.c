@@ -107,7 +107,7 @@ int main(const int argc, const char * argv []) {
 				//printf("Prepending %s to %s\n", overflow_str, buff_in);
 				if (buff_ptr[buffpos] == '\n') {
 					//printf("Newline detected.\n");
-					sprintf(record_out, "%s\n%s%*c", overflow_str, buff_in, (REC_LEN -(int)strlen(buff_in)-(int)strlen(overflow_str))-1, ' ');
+					sprintf(record_out, "%s\n%s%*c\n", overflow_str, buff_in, (REC_LEN -(int)strlen(buff_in)-(int)strlen(overflow_str))-1, ' ');
 				}
 				else {
 					sprintf(record_out, "%s%s%*c\n", overflow_str, buff_in, (REC_LEN -(int)strlen(buff_in)-(int)strlen(overflow_str)), ' ');
