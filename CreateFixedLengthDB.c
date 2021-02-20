@@ -107,7 +107,19 @@ int main(const int argc, const char * argv []) {
 				//printf("Prepending %s to %s\n", overflow_str, buff_in);
 				if (buff_ptr[buffpos] == '\n') {
 					//printf("Newline detected.\n");
-					sprintf(record_out, "%s\n%s%*c\n", overflow_str, buff_in, (REC_LEN -(int)strlen(buff_in)-(int)strlen(overflow_str))-1, ' ');
+
+					// We need another record to write for our overflow we've just done
+					char over_record_out[REC_LEN+1];
+
+					sprintf(over_record_out, "%s%*c\n", overflow_str, (REC_LEN -(int)strlen(overflow_str)), ' ');
+
+					if (write(fd_out, over_record_out, sizeof(over_record_out)/sizeof(over_record_out[0])) == -1) {
+						printf(URED "fail:" reset " Error writing database record %s to file %s", record_out, argv[2]);
+						exit(EXIT_FAILURE);
+					}
+
+					sprintf(record_out, "%s%*c\n", buff_in, (REC_LEN -(int)strlen(buff_in)), ' ');
+					record_out[REC_LEN] = '\n';
 				}
 				else {
 					sprintf(record_out, "%s%s%*c\n", overflow_str, buff_in, (REC_LEN -(int)strlen(buff_in)-(int)strlen(overflow_str)), ' ');
