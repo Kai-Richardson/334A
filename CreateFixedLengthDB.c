@@ -96,7 +96,7 @@ int main(const int argc, const char * argv []) {
 			//printf("scanned:[%s][%d]\n", buff_in, buffpos);
 
 			// If we're going to overflow on this string
-			if (buffpos + (sizeof(buff_ptr)) > PAGESIZE) {
+			if ((buffpos + n) > PAGESIZE) {
 				//printf("Overflow: %s(%d)\n", buff_in, buffpos + REC_LEN);
 
 				strcpy(overflow_str, buff_in); //Copy to overflow and prepend on next iter
