@@ -3,9 +3,7 @@ By Kai Richardson
 
 All output statements expect a POSIX-compliant color terminal.
 
-TO TEST (bootstraps): `./_runTests.sh`
-Yes, test 5 is designed to fail.
-
+TO TEST: `./_runTests.sh`
 
 TO BUILD: `make`
 

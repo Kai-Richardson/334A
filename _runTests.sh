@@ -17,3 +17,21 @@ do
         $READ $TSTDIR/out$iter.db f $mode
     done
 done
+
+$CREATE $TSTDIR/american-english-small $TSTDIR/english-small.db
+
+for mode in $(seq 0 1)
+do
+    printf "\nRunning american-english-small test $mode:\n"
+
+    $READ $TSTDIR/english-small.db Barack $mode
+done
+
+$CREATE $TSTDIR/american-english $TSTDIR/english.db
+
+for mode in $(seq 0 1)
+do
+    printf "\nRunning american-english test $mode:\n"
+
+    $READ $TSTDIR/english.db Obamacare $mode
+done
