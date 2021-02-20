@@ -98,13 +98,23 @@ int main(const int argc, const char * argv []) {
 			// If we're going to overflow on this string
 			if (buffpos + (sizeof(buff_ptr)) > PAGESIZE) {
 				//printf("Overflow: %s(%d)\n", buff_in, buffpos + REC_LEN);
+
 				strcpy(overflow_str, buff_in); //Copy to overflow and prepend on next iter
+	
+				// need to handle potential missed newline from the sscanf
+				if (likely_newline == '\n') { 
+					overflow_str[n-1] = '\n';
+					overflow_str[n] = '\0';
+				}
+
 				first_after_over = 1;
 				break;
 			}
 
 			if (first_after_over) {
 				//printf("Prepending %s to %s\n", overflow_str, buff_in);
+				rec_num++;
+
 				if (buff_ptr[buffpos] == '\n') {
 					//printf("Newline detected.\n");
 
