@@ -10,7 +10,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 
-#include "stdkai.h"
+#include "stdcolor.h"
 
 #define MAXIMUM_INPUT_LENGTH 20
 
@@ -73,14 +73,14 @@ int main(const int argc, const char * argv []) {
 	/// Is this our first inner scanf pass? Used for overflow prepending.
 	int first_after_over = 0;
 
+	/// The record we're going to write out, padded to length (+1 for \n).
+	char record_out[REC_LEN+1];
+
 	// Main reading loop
 	while (read(fd_in, read_buffer, PAGESIZE) > 0) {
 
 		/// Buffer for our scanf().
 		char buff_in[REC_LEN];
-
-		/// The record we're going to write out, padded to length (+1 for \n).
-		char record_out[REC_LEN+1];
 
 		/// Ptr to the current position in the read buffer
 		char* buff_ptr = read_buffer;
@@ -140,17 +140,15 @@ int main(const int argc, const char * argv []) {
 					sprintf(record_out, "%s%s%*c\n", overflow_str, buff_in, (REC_LEN -(int)strlen(buff_in)-(int)strlen(overflow_str)), ' ');
 				}
 				first_after_over = 0;
-				//printf("record_out: [%s]\n", record_out);
-
 				buff_ptr += n;
 			}
 			else {
 				//If we're not at the end of a line, don't pad with spaces
 				if (likely_newline != '\n') {
-					strcpy(overflow_str, buff_in); //Copy to overflow and prepend on next iter
+					//Copy to overflow and prepend on next iter
+					strcpy(overflow_str, buff_in);
 					first_after_over = 1;
 					break;
-					//sprintf(record_out, "%s", buff_in);
 				}
 				else {
 					sprintf(record_out, "%s%*c", buff_in, (REC_LEN -(int)strlen(buff_in)), ' ');
@@ -174,13 +172,10 @@ int main(const int argc, const char * argv []) {
 		read_buffer = calloc(PAGESIZE, sizeof(char));
 
 		//printf("--------PAGE--------\n");
-
 	}
 
-	if (first_after_over) //We still have leftover overflow
+	if (first_after_over) //We still have leftover overflow (only last block)
 	{
-		char record_out[REC_LEN+1];
-		//printf("writing %s\n", overflow_str);
 		sprintf(record_out, "%s%*u", overflow_str, (REC_LEN -(int)strlen(overflow_str)+2), ' ');
 		record_out[REC_LEN] = '\n';
 		if (write(fd_out, record_out, sizeof(record_out)/sizeof(record_out[0])) == -1) {
@@ -195,10 +190,11 @@ int main(const int argc, const char * argv []) {
 	// Free our last used read buffer block
 	free(read_buffer);
 
+	// Close our file descriptors
 	close(fd_in);
 	close(fd_out);
 
 	printf(GRN "Creation Successful: " BWHT "%d" reset " records\n", rec_num);
 
-	return 1;
+	return EXIT_SUCCESS;
 }

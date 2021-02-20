@@ -8,7 +8,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "stdkai.h"
+#include "stdcolor.h"
 #include "reader.h"
 
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
@@ -19,7 +19,7 @@
 int main(const int argc, const char * argv []) {
 	if (argc != 4) {
 		printf(RED "fail:" reset " " UWHT "Usage:" reset " %s <Input File> <Search Text> <Mode>\n", argv[0]);
-		exit(EXIT_FAILURE); 
+		exit(EXIT_FAILURE);
 	}
 
 	const char* search_text = argv[2];
@@ -27,7 +27,7 @@ int main(const int argc, const char * argv []) {
 
 	const char * filename = argv[1];
 	int fd_in = open(filename, O_RDONLY|O_CREAT, 0777);
- 	int errnum = errno;	
+ 	int errnum = errno;
  	if(errnum == -1){
 		printf(URED "fail:" reset " Could not open file: %s \n", argv[1]);
 		exit(EXIT_FAILURE);
@@ -56,7 +56,7 @@ int main(const int argc, const char * argv []) {
 	// Number of records found
 	int rec_num = 0;
 	// Stat struct to get bytesize
-	struct stat struct_stat;	
+	struct stat struct_stat;
 	if (stat(argv[1], &struct_stat) == -1) {
 		perror(URED "fail:" reset " Could not run sys call: stat\n");
 	}
@@ -105,11 +105,11 @@ int main(const int argc, const char * argv []) {
 	}
 
 	return EXIT_SUCCESS;
-}	
+}
 
 /**
  * Searches sequentially through a chunked char array input for a given string.
- * 
+ *
  * Return:	* negative int error code if failure encountered
  * 			* CODE_NOTFOUND if not found
  * 			* positive int of position if found
@@ -123,7 +123,7 @@ int SequentialSearch(char* input, const char* searchstr, int* searchnum, int rec
 	int max_num_records = (PAGESIZE / (reclen+1))+4; //TODO: +4 due to overflow garbage data
 	// Number of records * Length of each record (+1 for \0)
 	int arr_size  = (max_num_records * (reclen+1));
-	
+
 
 	// Setup array
 	char** search_arr = calloc(arr_size, sizeof(char*));
@@ -154,7 +154,7 @@ int SequentialSearch(char* input, const char* searchstr, int* searchnum, int rec
 		n_pos++;
 		input_ptr += n_chars;
 	}
-	
+
 	// The actual searching part
 	for(int i = 0; i < n_pos; ++i)
 	{
@@ -173,7 +173,7 @@ int SequentialSearch(char* input, const char* searchstr, int* searchnum, int rec
 
 /**
  * Searches via binary search through a chunked char array input for a given string.
- * 
+ *
  * Return:	* negative int error code if failure encountered
  * 			* CODE_NOTFOUND if not found
  * 			* positive int of position if found
@@ -187,12 +187,12 @@ int InterpolationSearch(char* input, const char* searchstr, int* searchnum, int 
 	int max_num_records = (PAGESIZE / (reclen+1)+2); //TODO: +2 due to overflow garbage data
 	// Number of records * Length of each record (+1 for \0)
 	int arr_size  = (max_num_records * (reclen+1));
-	
+
 
 	// Setup array
 	char** search_arr = calloc(arr_size, sizeof(char*));
 	if (search_arr == NULL) perror(URED "fail:" reset " malloc1 failed to allocate\n");
-	
+
 	for (int i = 0; i < max_num_records; i++) // Allocating interior
 	{
 		search_arr[i] = calloc(reclen + 1, sizeof(char));
@@ -219,7 +219,7 @@ int InterpolationSearch(char* input, const char* searchstr, int* searchnum, int 
 		n_pos++;
 		input_ptr += n_chars;
 	}
-	
+
 	int low = 0;
 	int high = n_pos-1;
 
