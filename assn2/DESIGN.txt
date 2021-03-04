@@ -1,0 +1,58 @@
+                                                                                                             
+                      +-------------------------------------------------------------------+                  
++------+             /|zesh_real: gets user input 2 str,uses: getline() to alloc. and read|                  
+| Main |           /- +---------------------------------|---------------------------------+                  
++-|----+         /-                                     |                                                    
+  |            /-     +---------------------------------|---------------------------------------------------+
+ +|--------+ /-       |zesh_tok: tokenizes input 2 array uses: strtok and dynamically reallocating arg array|
+ |Main Loop|-         +----------------|--------------------------------------------------------------------+
+ +---------+                           | Also allocate pipe memory here                                      
+          \-------    +----------------|--------------------+                                                
+      return back \---|zesh_run: runs our shell on the input|                                                
+      when we get     +-|-----------------------------------+                                                
+      a CONTinue        |First: checked for no args or \n. Then, check if exit command was passed.           
+      also free()       |                                                                                    
+                        |Test if we have a &background char at end of input and set var.                     
+                        |                                                                                    
+                        |Test if there is redirected input or output, set the files and remove from args.    
+                        |                                                                                    
+                        |Test if we are piping to a process, shove the rest of args in a buffer if so.       
+                        |                                                                                    
+                        |Test if we have a timeout symbol, set the time and remove.                          
+                        |      +---------+                                                                   
+                        |Then, | Execute | and return                                                        
+                               +---------+                                                                   
+                                 |                                                                           
+      |---------------------------                                                                           
+      |If we have a killtime, set a signal proc mask to catch term. child signal.                            
+      |                                                                                                      
+      |Create a pipe and fork a child                                                                        
+      |                                                                                                      
+      |Child:                                                                                                
+      |	If we have a |pipe, set sdout of child to be the writing end                                         
+      | Redirect stdout or stdin to a file depending on redirection                                          
+      | Exevp the passed arguments                                                                           
+      |                                                                                                      
+      |Parent:                                                                                               
+      |   If we have a |pipe, fork a child:                                                                  
+      |       Child 2:                                                                                       
+      |           Set stdin to be the reading end of the pipe                                                
+      |           Execute command.                                                                           
+      |   Close both ends of the pipe.                                                                       
+      |   If we have a killtime:                                                                             
+      |      sigtimedwait for a child signal with our set time                                               
+      |      If no signal, SIGKILL the pid.                                                                  
+      |   If we're not a background process:                                                                 
+      |       waitpid while not child signaled or child exited                                               
+      |   return CONTinue                                                                                    
+
+
+Not sure how to describe the kernel call execution. Mainly just working with pipes, file descriptors, and simple execvp.
+The diagram should explain pretty much everything in generalities. Comments are very descriptive in my code as well.
+
+I chose sigtimedwait, because it was much easier than firing off another process.
+The other syscalls were no-brainers, such as dup2 for pipe usage.
+Not many other details other than I tried to go for a very modular approach. I used a helper file and #definable symbols.
+These should in theory allow one to customize the shell very easily.
+
+As said in the main code file, `Note: I internally refer to the shell as `zesh`, because having nums in fn names is cursed.`

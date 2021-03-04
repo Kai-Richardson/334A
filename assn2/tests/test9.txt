@@ -1,0 +1,3 @@
+@ 0 ./tests/inf.sh
+
+You will need to terminate this manually with Ctrl-C.

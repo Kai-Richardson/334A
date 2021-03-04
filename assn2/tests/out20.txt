@@ -1,0 +1,3 @@
+cs334:) Timeout reached: 1 seconds. Killing process...
+cs334:) exit
+calling shell (normally bash) prompt here>

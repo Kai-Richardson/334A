@@ -1,0 +1,35 @@
+
+1. Did you complete all required section or functionality of this assignment. If not, state what you
+were able to successfully implement and what is missing.
+
+I completed just about all of the functionality.
+
+Bugs / Incomplete:
+  My program doesn't allow a process to use the timeout feature, as well as the background feature.
+    They somewhat work, but if you run another command while the background process is running, it won't timeout anymore.
+    The background feature will override.
+  My program is whitespace-sensitive for the control characters. Couldn't easily get it to work with other features otherwise.
+
+Notes:
+  It wasn't specified clearly in the requirements, but my shell doesn't support `@ 0`, waiting for zero seconds for timed execution.
+  I also added a built-in `exit` command.
+  I tried to get automated testing working, but executing commands passed in to the shell proved too difficult for me at this time.
+
+2. There are several different popular shells out there, what are the main similarities and differences
+among them
+
+Sorry it's a bit wide.
++--------+------------------------------------------------------------------------------------+-----------------------------------------------------------+
+|  Name  |                                    Description                                     |                      Characteristics                      |
++--------+------------------------------------------------------------------------------------+-----------------------------------------------------------+
+| Bourne | Default shell for Unix, establishes stuff like an environment. Good for scripting. | Most shells descended from this, lots of basic features   |
+|        |                                                                                    | see: GNU/Linux's default `bash` shell which is compatible |
+|        |                                                                                    |                                                           |
+| CShell | Very different, intended for interactive use, programming. It's more like C lang.  | History, aliases, job control, more terse                 |
+|        |                                                                                    |                                                           |
+| Korn   | Deprecated as of 2020, Somewhat of a merge of C Shell and sh.                      | Dynamic extensibility,  job control, aliasing, history    |
+|        |                                                                                    |                                                           |
+| tcsh   | Basically C Shell (symlinked on OSX/red hat!), native shell for BSD-based systems. | See: C Shell, programmable cmd-line completion            |
+|        |                                                                                    |                                                           |
+| ZShell | Default for OSX & Kali. Loadable modules to provide functionality.                 | Extremely customizable. compat. modes, almost all above.  |
++--------+------------------------------------------------------------------------------------+-----------------------------------------------------------+

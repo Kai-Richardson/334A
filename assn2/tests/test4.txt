@@ -1,0 +1,1 @@
+echo "Nifty!" > tests/_tempOut.txt
