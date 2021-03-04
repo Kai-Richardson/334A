@@ -1,4 +1,0 @@
-     12      12     111
-
-
-Or whatever the values are for the ls in your directory.
