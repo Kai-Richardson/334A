@@ -3,7 +3,7 @@ use std::{
     fs::File,
     io::{BufWriter, Write},
     sync::{Arc, Mutex},
-    thread
+    thread,
 };
 use tokio::sync::Semaphore;
 
@@ -34,32 +34,40 @@ fn main() {
     // write!(output, "foo").expect("Failure writing");
 
     // Semaphore to only let us spawn so many threads
-    let sem = Semaphore::new(args.thread_count);
+    //let sem = Semaphore::new(args.thread_count);
     /*
         iterate over file names
         dec sema / spawn thread
         do work - need mutex on output file writing
         inc sema
     */
-    let _ = sem.acquire();
+    //let _ = sem.acquire();
 
+    // Vec of our thread handles
     let mut handles = vec![];
 
-    for _ in 0..=10 {
+    for _ in 0..args.thread_count {
         let counter = Arc::clone(&counter);
         let handle = thread::spawn(move || {
             let mut mutex = counter.lock().expect("error obtaining mutex lock");
 
-            mutex.write_all(b"foo").unwrap();
+            write!(mutex, "foo\n").expect("failed to write to output file");
             mutex.flush().unwrap();
         });
         handles.push(handle);
     }
+
+    // Sync up all thread handles and wait for them to finish.
     for handle in handles {
         handle.join().unwrap();
     }
 
-    //println!("Result: {}", *counter.lock().unwrap());
+    // Be sure to flush all buffered data to our output before exiting.
+    counter
+        .lock()
+        .expect("error obtaining mutex lock")
+        .flush()
+        .expect("failed to flush data buffer");
 
     println!("Exiting...");
 }
