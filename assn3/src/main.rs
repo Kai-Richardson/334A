@@ -1,4 +1,5 @@
 use argh::FromArgs;
+use std::{fs::File, io::{BufWriter, Write}};
 use tokio::spawn;
 use tokio::sync::Semaphore;
 
@@ -22,10 +23,14 @@ struct Arguments {
 async fn main() {
     let args: Arguments = argh::from_env();
 
-    // if let Err(output_file) = File::open(args.output_file) {
-    //     panic!("Error encountered opening the output file. Exiting...");
-    // }
+    // Setup output file
+    let output_file = File::open(args.output_file).expect("Error encountered opening the output file.");
+    let mut output = BufWriter::new(output_file); // Buffered writing
+    // write!(output, "foo").expect("Failure writing");
+    
+
     // Semaphore to only let us spawn so many threads
+    let sem = Semaphore::new(args.thread_count);
 
     println!("Hello, world!");
 
@@ -33,8 +38,6 @@ async fn main() {
     // dec sema / spawn thread
     // do work - need mutex on output file writing
     // inc sema
-
-    let sem = Semaphore::new(args.thread_count);
 
     let _ = sem.acquire().await;
 
