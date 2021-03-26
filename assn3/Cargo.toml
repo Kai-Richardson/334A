@@ -9,4 +9,4 @@ edition = "2018"
 [dependencies]
 argh = "0.1" # Arguments
 lodepng = "3.4" # PNG Lib
-tokio = {version = "1", features = ["full"]} # Threading
+tokio = {version = "1", features = ["sync"]} # Threading
