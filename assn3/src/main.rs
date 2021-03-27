@@ -1,6 +1,6 @@
 use argh::FromArgs;
 use std::{
-    fs::File,
+    fs::{read_dir, File},
     io::{BufWriter, Write},
     sync::{Arc, Mutex},
     thread,
@@ -16,7 +16,7 @@ struct Arguments {
 
     /// folder for input images
     #[argh(positional)]
-    process_folder: String,
+    input_folder: String,
 
     /// output file name
     #[argh(positional)]
@@ -28,10 +28,15 @@ fn main() {
 
     // Setup output file
     let output_file = File::create(args.output_file).expect("Error opening output file.");
-    let writer = BufWriter::new(output_file); // Buffered writing
+    let writer = BufWriter::new(output_file);
     let counter = Arc::new(Mutex::new(writer));
 
-    // write!(output, "foo").expect("Failure writing");
+    // Setup input files
+    let input_iter = read_dir(args.input_folder).expect("Error reading input directory.");
+
+    for file in input_iter {
+        println!("{}", file.unwrap().path().display());
+    }
 
     // Semaphore to only let us spawn so many threads
     //let sem = Semaphore::new(args.thread_count);
@@ -52,7 +57,6 @@ fn main() {
             let mut mutex = counter.lock().expect("error obtaining mutex lock");
 
             write!(mutex, "foo\n").expect("failed to write to output file");
-            mutex.flush().unwrap();
         });
         handles.push(handle);
     }
