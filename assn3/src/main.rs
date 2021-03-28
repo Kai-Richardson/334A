@@ -34,14 +34,25 @@ fn main() {
     // Setup input files
     let input_iter = read_dir(args.input_folder).expect("Error reading input directory.");
 
+    // Semaphore to only let us spawn so many threads
+    // let sem = Semaphore::new(args.thread_count);
+
+    // Iterate over every input file
     for file in input_iter {
-        println!("{}", file.unwrap().path().display());
+        let file = file.expect("Error reading input file");
+        let path = file.path().to_str().expect("Error determining file path").to_string();
+        let image = match lodepng::decode32_file(path.clone()) {
+            Ok(b) => b,
+            Err(e) => {
+                print!("Error {} encountered reading image data for {}.", e, path);
+                continue;
+            }
+        };
+        println!("{}", image.height);
     }
 
-    // Semaphore to only let us spawn so many threads
-    //let sem = Semaphore::new(args.thread_count);
     /*
-        iterate over file names
+        // iterate over file names
         dec sema / spawn thread
         do work - need mutex on output file writing
         inc sema
