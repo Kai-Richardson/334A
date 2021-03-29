@@ -9,4 +9,7 @@ edition = "2018"
 [dependencies]
 argh = "0.1" # Arguments
 lodepng = "3.4" # PNG Lib
-tokio = {version = "1", features = ["sync"]} # For semaphore, not the threading
+tokio = {version = "1", features = ["full"]} # For semaphore, not the threading
+async-weighted-semaphore = "0.2" # For spawning threads that borrow local variables from the stack.
+
+

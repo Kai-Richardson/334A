@@ -19,7 +19,7 @@
           "kind": "bin"
         }
       },
-      "args": ["8", "2", "3"],
+      "args": ["4", "sampleImages/", "output.txt"],
       "cwd": "${workspaceFolder}"
     },
     {

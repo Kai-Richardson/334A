@@ -5,7 +5,7 @@ use std::{
     sync::{Arc, Mutex},
     thread,
 };
-use tokio::sync::Semaphore;
+use async_weighted_semaphore::{Semaphore, SemaphoreGuardArc};
 
 #[derive(Debug, FromArgs)]
 /// Folder histogram generator
@@ -23,66 +23,94 @@ struct Arguments {
     output_file: String,
 }
 
-fn main() {
+/*
+    // iterate over file names
+    dec sema / spawn thread
+    do work - need mutex on output file writing
+    inc sema
+*/
+
+#[tokio::main]
+async fn main() {
+
     let args: Arguments = argh::from_env();
 
     // Setup output file
-    let output_file = File::create(args.output_file).expect("Error opening output file.");
+    let output_file = File::create(args.output_file).expect("Error opening output file:");
     let writer = BufWriter::new(output_file);
-    let counter = Arc::new(Mutex::new(writer));
+    let file_mutex = Arc::new(Mutex::new(writer));
 
     // Setup input files
-    let input_iter = read_dir(args.input_folder).expect("Error reading input directory.");
+    let input_iter = read_dir(args.input_folder).expect("Error reading input directory:");
 
     // Semaphore to only let us spawn so many threads
-    // let sem = Semaphore::new(args.thread_count);
+    let sem = Arc::new(Semaphore::new(args.thread_count));
 
-    // Iterate over every input file
+    // Vec of all of our file paths to process
+    let mut path_vec = vec![];
+
+    // Iterate over every input file and add to the vec of file names
     for file in input_iter {
-        let file = file.expect("Error reading input file");
-        let path = file.path().to_str().expect("Error determining file path").to_string();
-        let image = match lodepng::decode32_file(path.clone()) {
-            Ok(b) => b,
-            Err(e) => {
-                print!("Error {} encountered reading image data for {}.", e, path);
+        let file = file.expect("Error reading input file:");
+        if file.file_type().expect("Error reading file type:").is_file() {
+            let path = file.path();
+            if path.extension().expect("Error reading file extension:") != "png" {
                 continue;
-            }
-        };
-        println!("{}", image.height);
+            };
+            let path_str = path.to_str().expect("Error determining file path:").to_string();
+            path_vec.push(path_str);
+        }
     }
-
-    /*
-        // iterate over file names
-        dec sema / spawn thread
-        do work - need mutex on output file writing
-        inc sema
-    */
-    //let _ = sem.acquire();
 
     // Vec of our thread handles
     let mut handles = vec![];
 
-    for _ in 0..args.thread_count {
-        let counter = Arc::clone(&counter);
-        let handle = thread::spawn(move || {
-            let mut mutex = counter.lock().expect("error obtaining mutex lock");
+    // Note: If you wanted to do this 'properly', the _entire_ thread logic could be done via rayon w/
+    // `path_list.par_iter().for_each(|path| process_image(path));`
 
-            write!(mutex, "foo\n").expect("failed to write to output file");
+    // Iterate over every path and spin off a thread if we can, else wait
+    for path in path_vec.iter() {
+        let infile = path.clone();
+        let outfile = Arc::clone(&file_mutex);
+
+        let permit =  match sem.acquire_arc(1).await {
+            Err(_) => panic!("Semaphore poisoned:"),
+            Ok(guard) => guard,
+        };
+
+        let handle = thread::spawn(move || {
+            process_image(outfile, infile, permit);
         });
+        sem.release(1);
         handles.push(handle);
     }
 
     // Sync up all thread handles and wait for them to finish.
     for handle in handles {
-        handle.join().unwrap();
+        handle.join().expect("Child thread has panicked:");
     }
 
-    // Be sure to flush all buffered data to our output before exiting.
-    counter
+    // Flush all buffered data to our output before exiting.
+    file_mutex
         .lock()
-        .expect("error obtaining mutex lock")
+        .expect("Error obtaining mutex lock:")
         .flush()
-        .expect("failed to flush data buffer");
+        .expect("Failed to flush data buffer:");
 
     println!("Exiting...");
+}
+
+fn process_image(mutex: Arc<Mutex<BufWriter<File>>>, path: String, sem: SemaphoreGuardArc) {
+    let mut writer = mutex.lock().expect("error obtaining mutex lock");
+
+    let image = match lodepng::decode32_file(&path) {
+        Ok(b) => b,
+        Err(e) => {
+            panic!("Error {} encountered reading image data for {}.", e, path);
+        }
+    };
+
+    writeln!(writer, "{}", image.height).expect("Failed to write to output file:");
+
+    sem.forget(); //TODO THIS CAUSES PROBLEMS DO ARC SEMA INSTEAD
 }
