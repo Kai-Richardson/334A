@@ -5,7 +5,7 @@ use std::{
     sync::{Arc, Mutex},
     thread,
 };
-use tokio::sync::{Semaphore};
+use tokio::sync::Semaphore;
 
 #[derive(Debug, FromArgs)]
 /// Folder histogram generator
@@ -25,7 +25,6 @@ struct Arguments {
 
 #[tokio::main]
 async fn main() {
-
     let args: Arguments = argh::from_env();
 
     // Setup output file
@@ -70,7 +69,7 @@ async fn main() {
 
         match sema.acquire().await {
             Ok(_) => (),
-            Err(e) => panic!("Semaphore aquire error: {}", e)
+            Err(e) => panic!("Semaphore aquire error: {}", e),
         };
 
         let handle = thread::spawn(move || {
@@ -105,9 +104,9 @@ fn process_image(mutex: Arc<Mutex<BufWriter<File>>>, path: String, sem: Arc<Sema
     };
 
     // Histogram for every R, G, and B.
-    let mut hist = [0; (256*3)];
+    let mut hist = [0; (256 * 3)];
 
-    for iter in image.buffer.iter(){
+    for iter in image.buffer.iter() {
         let pixel = iter;
 
         let red: usize = pixel.r.into();
@@ -115,12 +114,19 @@ fn process_image(mutex: Arc<Mutex<BufWriter<File>>>, path: String, sem: Arc<Sema
         let blue: usize = pixel.b.into();
 
         hist[red] += 1;
-        hist[256+green] += 1;
-        hist[256+256+blue] += 1;
+        hist[256 + green] += 1;
+        hist[256 + 256 + blue] += 1;
     }
 
     for iter in hist.iter().enumerate() {
-        writeln!(writer, "{}:{}\t{}", iter.0, iter.1, (iter.1/(image.width*image.height*3))).expect("Failed to write to output file:");
+        writeln!(
+            writer,
+            "{}:{}\t{}",
+            iter.0,
+            iter.1,
+            (iter.1 / (image.width * image.height * 3))
+        )
+        .expect("Failed to write to output file:");
     }
 
     sem.add_permits(1);
