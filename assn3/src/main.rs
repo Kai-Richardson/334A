@@ -104,7 +104,24 @@ fn process_image(mutex: Arc<Mutex<BufWriter<File>>>, path: String, sem: Arc<Sema
         }
     };
 
-    writeln!(writer, "{}", image.height).expect("Failed to write to output file:");
+    // Histogram for every R, G, and B.
+    let mut hist = [0; (256*3)];
+
+    for iter in image.buffer.iter(){
+        let pixel = iter;
+
+        let red: usize = pixel.r.into();
+        let green: usize = pixel.g.into();
+        let blue: usize = pixel.b.into();
+
+        hist[red] += 1;
+        hist[256+green] += 1;
+        hist[256+256+blue] += 1;
+    }
+
+    for iter in hist.iter().enumerate() {
+        writeln!(writer, "{}:{}\t{}", iter.0, iter.1, (iter.1/(image.width*image.height*3))).expect("Failed to write to output file:");
+    }
 
     sem.add_permits(1);
 }
