@@ -5,7 +5,7 @@ use std::{
     sync::{Arc, Mutex},
     thread,
 };
-use async_weighted_semaphore::{Semaphore, SemaphoreGuardArc};
+use tokio::sync::{Semaphore};
 
 #[derive(Debug, FromArgs)]
 /// Folder histogram generator
@@ -22,13 +22,6 @@ struct Arguments {
     #[argh(positional)]
     output_file: String,
 }
-
-/*
-    // iterate over file names
-    dec sema / spawn thread
-    do work - need mutex on output file writing
-    inc sema
-*/
 
 #[tokio::main]
 async fn main() {
@@ -73,15 +66,16 @@ async fn main() {
         let infile = path.clone();
         let outfile = Arc::clone(&file_mutex);
 
-        let permit =  match sem.acquire_arc(1).await {
-            Err(_) => panic!("Semaphore poisoned:"),
-            Ok(guard) => guard,
+        let sema = Arc::clone(&sem);
+
+        match sema.acquire().await {
+            Ok(_) => (),
+            Err(e) => panic!("Semaphore aquire error: {}", e)
         };
 
         let handle = thread::spawn(move || {
-            process_image(outfile, infile, permit);
+            process_image(outfile, infile, sema);
         });
-        sem.release(1);
         handles.push(handle);
     }
 
@@ -100,7 +94,7 @@ async fn main() {
     println!("Exiting...");
 }
 
-fn process_image(mutex: Arc<Mutex<BufWriter<File>>>, path: String, sem: SemaphoreGuardArc) {
+fn process_image(mutex: Arc<Mutex<BufWriter<File>>>, path: String, sem: Arc<Semaphore>) {
     let mut writer = mutex.lock().expect("error obtaining mutex lock");
 
     let image = match lodepng::decode32_file(&path) {
@@ -112,5 +106,5 @@ fn process_image(mutex: Arc<Mutex<BufWriter<File>>>, path: String, sem: Semaphor
 
     writeln!(writer, "{}", image.height).expect("Failed to write to output file:");
 
-    sem.forget(); //TODO THIS CAUSES PROBLEMS DO ARC SEMA INSTEAD
+    sem.add_permits(1);
 }
