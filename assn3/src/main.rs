@@ -1,6 +1,7 @@
 use argh::FromArgs;
 use core::panic;
 use std::{
+    convert::TryInto,
     fs::{read_dir, File},
     io::{BufWriter, Write},
     sync::{Arc, Mutex},
@@ -35,8 +36,10 @@ fn main() {
     // Setup input files
     let input_iter = read_dir(args.input_folder).expect("Error reading input directory:");
 
+    let thread_count: i32 = args.thread_count.try_into().unwrap();
+
     // Semaphore to only let us spawn so many threads
-    let sem = Arc::new(Semaphore::anonymous(10).unwrap());
+    let sem = Arc::new(Semaphore::anonymous(thread_count).unwrap());
 
     // Vec of all of our file paths to process
     let mut path_vec = vec![];
@@ -66,11 +69,9 @@ fn main() {
         let outfile = Arc::clone(&file_mutex);
 
         let sema = Arc::clone(&sem);
-
         sema.wait();
 
         let handle = thread::spawn(move || {
-            println!("thread");
             process_image(outfile, infile, sema);
         });
         handles.push(handle);
@@ -118,11 +119,9 @@ fn process_image(mutex: Arc<Mutex<BufWriter<File>>>, path: String, sema: Arc<Sem
 
     for iter in hist.iter().enumerate() {
         let avg: f32 = *iter.1 as f32 / (image.width as f32 * image.height as f32 * 3.0);
-        writeln!(writer, "{}:{}\t{}", iter.0, iter.1, avg).expect("Failed to write to output file:");
+        write!(writer, "{}:{}\t{}\n", iter.0, iter.1, avg).expect("Failed to write to output file:");
     }
+    //writeln!(writer, "").expect("Failed to write to output file:");
 
-    match sema.post() {
-        Ok(_) => (),
-        Err(o) => panic!("{}", o),
-    };
+    sema.post().unwrap();
 }
