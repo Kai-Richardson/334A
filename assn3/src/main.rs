@@ -5,7 +5,7 @@ use std::{
     sync::{Arc, Mutex},
     thread,
 };
-use tokio::sync::Semaphore;
+use semaphore::{Semaphore, SemaphoreGuard};
 
 #[derive(Debug, FromArgs)]
 /// Folder histogram generator
@@ -23,8 +23,7 @@ struct Arguments {
     output_file: String,
 }
 
-#[tokio::main]
-async fn main() {
+fn main() {
     let args: Arguments = argh::from_env();
 
     // Setup output file
@@ -36,7 +35,7 @@ async fn main() {
     let input_iter = read_dir(args.input_folder).expect("Error reading input directory:");
 
     // Semaphore to only let us spawn so many threads
-    let sem = Arc::new(Semaphore::new(args.thread_count));
+    let sem = Arc::new(Semaphore::new(args.thread_count, ""));
 
     // Vec of all of our file paths to process
     let mut path_vec = vec![];
@@ -67,13 +66,13 @@ async fn main() {
 
         let sema = Arc::clone(&sem);
 
-        match sema.acquire().await {
-            Ok(_) => (),
-            Err(e) => panic!("Semaphore aquire error: {}", e),
+        let permit = match sema.try_access() {
+            Ok(guard) => guard,
+            Err(_) => panic!("Semaphore aquire error"), // need to wait and spin lock here
         };
 
         let handle = thread::spawn(move || {
-            process_image(outfile, infile, sema);
+            process_image(outfile, infile, permit);
         });
         handles.push(handle);
     }
@@ -93,7 +92,7 @@ async fn main() {
     println!("Exiting...");
 }
 
-fn process_image(mutex: Arc<Mutex<BufWriter<File>>>, path: String, sem: Arc<Semaphore>) {
+fn process_image(mutex: Arc<Mutex<BufWriter<File>>>, path: String, guard: SemaphoreGuard<&str>) {
     let mut writer = mutex.lock().expect("error obtaining mutex lock");
 
     let image = match lodepng::decode32_file(&path) {
@@ -119,15 +118,16 @@ fn process_image(mutex: Arc<Mutex<BufWriter<File>>>, path: String, sem: Arc<Sema
     }
 
     for iter in hist.iter().enumerate() {
+        let avg: f32 = *iter.1 as f32 / (image.width as f32* image.height as f32 * 3.0);
         writeln!(
             writer,
             "{}:{}\t{}",
             iter.0,
             iter.1,
-            (iter.1 / (image.width * image.height * 3))
+            avg
         )
         .expect("Failed to write to output file:");
     }
 
-    sem.add_permits(1);
+    drop(guard);
 }
