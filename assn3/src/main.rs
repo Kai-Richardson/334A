@@ -1,11 +1,12 @@
 use argh::FromArgs;
+use core::panic;
 use std::{
     fs::{read_dir, File},
     io::{BufWriter, Write},
     sync::{Arc, Mutex},
     thread,
 };
-use semaphore::{Semaphore, SemaphoreGuard};
+use unix_semaphore::Semaphore;
 
 #[derive(Debug, FromArgs)]
 /// Folder histogram generator
@@ -35,7 +36,7 @@ fn main() {
     let input_iter = read_dir(args.input_folder).expect("Error reading input directory:");
 
     // Semaphore to only let us spawn so many threads
-    let sem = Arc::new(Semaphore::new(args.thread_count, ""));
+    let sem = Arc::new(Semaphore::anonymous(10).unwrap());
 
     // Vec of all of our file paths to process
     let mut path_vec = vec![];
@@ -57,7 +58,7 @@ fn main() {
     let mut handles = vec![];
 
     // Note: If you wanted to do this 'properly', the _entire_ thread logic could be done via rayon w/
-    // `path_list.par_iter().for_each(|path| process_image(path));`
+    // `path_list.par_iter().for_each(|path| process_image(path, out));`
 
     // Iterate over every path and spin off a thread if we can, else wait
     for path in path_vec.iter() {
@@ -66,13 +67,11 @@ fn main() {
 
         let sema = Arc::clone(&sem);
 
-        let permit = match sema.try_access() {
-            Ok(guard) => guard,
-            Err(_) => panic!("Semaphore aquire error"), // need to wait and spin lock here
-        };
+        sema.wait();
 
         let handle = thread::spawn(move || {
-            process_image(outfile, infile, permit);
+            println!("thread");
+            process_image(outfile, infile, sema);
         });
         handles.push(handle);
     }
@@ -92,7 +91,7 @@ fn main() {
     println!("Exiting...");
 }
 
-fn process_image(mutex: Arc<Mutex<BufWriter<File>>>, path: String, guard: SemaphoreGuard<&str>) {
+fn process_image(mutex: Arc<Mutex<BufWriter<File>>>, path: String, sema: Arc<Semaphore>) {
     let mut writer = mutex.lock().expect("error obtaining mutex lock");
 
     let image = match lodepng::decode32_file(&path) {
@@ -118,16 +117,12 @@ fn process_image(mutex: Arc<Mutex<BufWriter<File>>>, path: String, guard: Semaph
     }
 
     for iter in hist.iter().enumerate() {
-        let avg: f32 = *iter.1 as f32 / (image.width as f32* image.height as f32 * 3.0);
-        writeln!(
-            writer,
-            "{}:{}\t{}",
-            iter.0,
-            iter.1,
-            avg
-        )
-        .expect("Failed to write to output file:");
+        let avg: f32 = *iter.1 as f32 / (image.width as f32 * image.height as f32 * 3.0);
+        writeln!(writer, "{}:{}\t{}", iter.0, iter.1, avg).expect("Failed to write to output file:");
     }
 
-    drop(guard);
+    match sema.post() {
+        Ok(_) => (),
+        Err(o) => panic!("{}", o),
+    };
 }

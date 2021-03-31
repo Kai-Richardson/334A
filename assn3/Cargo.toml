@@ -11,5 +11,5 @@ argh = "0.1" # Arguments
 lodepng = "3.4" # PNG Lib
 #tokio = {version = "1", features = ["full"]} # For semaphore, not the threading
 # async-weighted-semaphore = "0.2" # For spawning threads that borrow local variables from the stack.
-semaphore = "0.4"
+unix-semaphore = { git = "https://github.com/vorner/unix-semaphore" }
 
