@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 argh = "0.1" # Arguments
-lodepng = "3.4" # PNG Lib
+image = "0.23" # PNG decoding
 unix-semaphore = { git = "https://github.com/vorner/unix-semaphore" } # Semaphore, we only need to support ubuntu anyways
 
 [profile.release]

@@ -1,5 +1,5 @@
 use argh::FromArgs;
-use core::panic;
+use image::io::Reader;
 use std::{
     convert::TryInto,
     fs::{read_dir, File},
@@ -113,36 +113,33 @@ fn main() {
         .flush()
         .expect("Failed to flush data buffer:");
 
-    println!("Exiting...");
+    println!("Finished, Exiting...");
 }
 
 fn process_image(mutex: Arc<Mutex<BufWriter<File>>>, fdat: Arc<FileData>, sema: Arc<Semaphore>) {
-    let mut writer = mutex.lock().expect("error obtaining mutex lock");
-
-    let image = match lodepng::decode32_file(&fdat.path) {
-        Ok(b) => b,
-        Err(e) => {
-            panic!("Error {} encountered reading image data for {}.", e, fdat.path);
-        }
-    };
+    // This line here, the decoding of the png file, is the main time sink
+    let image_full = Reader::open(&fdat.path).unwrap().decode().unwrap();
+    let image = image_full.as_rgb8().expect("Invalid RGB image:");
 
     // Histogram for every R, G, and B.
     let mut hist = [0; (256 * 3)];
 
-    for iter in image.buffer.iter() {
+    for iter in image.pixels() {
         let pixel = iter;
 
-        let red: usize = pixel.r.into();
-        let green: usize = pixel.g.into();
-        let blue: usize = pixel.b.into();
+        let red: usize = pixel[0].into();
+        let green: usize = pixel[1].into();
+        let blue: usize = pixel[2].into();
 
         hist[red] += 1;
         hist[256 + green] += 1;
         hist[256 + 256 + blue] += 1;
     }
 
+    let mut writer = mutex.lock().expect("error obtaining mutex lock");
+
     for iter in hist.iter() {
-        let freq: f32 = *iter as f32 / (image.width as f32 * image.height as f32);
+        let freq: f32 = *iter as f32 / (image.width() as f32 * image.height() as f32);
         write!(writer, "{} ", freq).expect("Failed to write to output file:");
     }
 
