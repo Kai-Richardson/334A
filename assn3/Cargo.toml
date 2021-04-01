@@ -1,6 +1,6 @@
 [package]
 name = "histogram-folder"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Kai Richardson <richardk22@up.edu>"]
 edition = "2018"
 
@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 argh = "0.1" # Arguments
 lodepng = "3.4" # PNG Lib
-#tokio = {version = "1", features = ["full"]} # For semaphore, not the threading
-# async-weighted-semaphore = "0.2" # For spawning threads that borrow local variables from the stack.
-unix-semaphore = { git = "https://github.com/vorner/unix-semaphore" }
+unix-semaphore = { git = "https://github.com/vorner/unix-semaphore" } # Semaphore, we only need to support ubuntu anyways
 
+[profile.release]
+lto = "thin" # Fast link-time optimization

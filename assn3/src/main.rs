@@ -23,6 +23,16 @@ struct Arguments {
     /// output file name
     #[argh(positional)]
     output_file: String,
+
+    /// number of kilobytes for buffered writing
+    #[argh(option, default = "4")]
+    buffer: usize,
+}
+
+/// For our file data that we pass to our threads
+struct FileData {
+    path: String,
+    name: String,
 }
 
 fn main() {
@@ -30,7 +40,7 @@ fn main() {
 
     // Setup output file
     let output_file = File::create(args.output_file).expect("Error opening output file:");
-    let writer = BufWriter::new(output_file);
+    let writer = BufWriter::with_capacity(args.buffer * 1000, output_file); // bytes -> kilobytes
     let file_mutex = Arc::new(Mutex::new(writer));
 
     // Setup input files
@@ -41,8 +51,8 @@ fn main() {
     // Semaphore to only let us spawn so many threads
     let sem = Arc::new(Semaphore::anonymous(thread_count).unwrap());
 
-    // Vec of all of our file paths to process
-    let mut path_vec = vec![];
+    // Vec of all of our (file paths, filename) to process
+    let mut file_vec = vec![];
 
     // Iterate over every input file and add to the vec of file names
     for file in input_iter {
@@ -51,9 +61,21 @@ fn main() {
             let path = file.path();
             if path.extension().expect("Error reading file extension:") != "png" {
                 continue;
-            };
+            }
+
+            let filename: String = path
+                .file_name()
+                .expect("Error determining file name:")
+                .to_owned()
+                .into_string()
+                .expect("Faulty unicode in file name:");
+
             let path_str = path.to_str().expect("Error determining file path:").to_string();
-            path_vec.push(path_str);
+            let data = FileData {
+                path: path_str,
+                name: filename.clone(),
+            };
+            file_vec.push(Arc::new(data));
         }
     }
 
@@ -64,15 +86,17 @@ fn main() {
     // `path_list.par_iter().for_each(|path| process_image(path, out));`
 
     // Iterate over every path and spin off a thread if we can, else wait
-    for path in path_vec.iter() {
-        let infile = path.clone();
+    for data in file_vec.iter() {
+        let data = data.clone();
         let outfile = Arc::clone(&file_mutex);
 
+        // Get a local instance of the sema to pass and wait on it
         let sema = Arc::clone(&sem);
         sema.wait();
 
+        // Spawn our thread since we're not blocked
         let handle = thread::spawn(move || {
-            process_image(outfile, infile, sema);
+            process_image(outfile, data, sema);
         });
         handles.push(handle);
     }
@@ -92,13 +116,13 @@ fn main() {
     println!("Exiting...");
 }
 
-fn process_image(mutex: Arc<Mutex<BufWriter<File>>>, path: String, sema: Arc<Semaphore>) {
+fn process_image(mutex: Arc<Mutex<BufWriter<File>>>, fdat: Arc<FileData>, sema: Arc<Semaphore>) {
     let mut writer = mutex.lock().expect("error obtaining mutex lock");
 
-    let image = match lodepng::decode32_file(&path) {
+    let image = match lodepng::decode32_file(&fdat.path) {
         Ok(b) => b,
         Err(e) => {
-            panic!("Error {} encountered reading image data for {}.", e, path);
+            panic!("Error {} encountered reading image data for {}.", e, fdat.path);
         }
     };
 
@@ -117,11 +141,12 @@ fn process_image(mutex: Arc<Mutex<BufWriter<File>>>, path: String, sema: Arc<Sem
         hist[256 + 256 + blue] += 1;
     }
 
-    for iter in hist.iter().enumerate() {
-        let avg: f32 = *iter.1 as f32 / (image.width as f32 * image.height as f32 * 3.0);
-        write!(writer, "{}:{}\t{}\n", iter.0, iter.1, avg).expect("Failed to write to output file:");
+    for iter in hist.iter() {
+        let freq: f32 = *iter as f32 / (image.width as f32 * image.height as f32);
+        write!(writer, "{} ", freq).expect("Failed to write to output file:");
     }
-    //writeln!(writer, "").expect("Failed to write to output file:");
+
+    writeln!(writer, "# {}", fdat.name).expect("Failed to write to output file:");
 
     sema.post().unwrap();
 }
