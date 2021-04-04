@@ -136,7 +136,7 @@ fn process_image(mutex: Arc<Mutex<BufWriter<File>>>, fdat: Arc<FileData>, sema: 
         hist[256 + 256 + blue] += 1;
     }
 
-    let mut writer = mutex.lock().expect("error obtaining mutex lock");
+    let mut writer = mutex.lock().expect("Error obtaining mutex lock:");
 
     for iter in hist.iter() {
         let freq: f32 = *iter as f32 / (image.width() as f32 * image.height() as f32);

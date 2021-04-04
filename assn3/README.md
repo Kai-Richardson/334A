@@ -2,7 +2,7 @@
 ### By Kai Richardson
 
 To install Rust:
-Run `install-rust.sh`.
+Run `install-rust.sh`. Follow the defaults (stable, likely x64).
 
 To compile: `cargo build --release`
 
@@ -13,8 +13,10 @@ There's two ways you can do this,
 
 If you want to watch it run in ~slow motion~ (so you can see the threads in htop), just don't add the release flag. It'll be much _much_ slower.
 
-I also added an option (`--buffer X`) to change the number of kilobytes for the buffered writing memory.
+I also added an option (`--buffer X`, must go after positional arguments) to change the number of kilobytes for the buffered writing memory.
 
 Note:
 This is currently busted on the main Virtual Desktop, due to permissions for cargo/rustc being really really messed up.
 They prevent me from bootstraping my own installation at the present.
+
+The arguments don't show any help text for the positional arguments, working on a fix for the crate.
